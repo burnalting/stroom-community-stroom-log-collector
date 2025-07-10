@@ -265,8 +265,3 @@ To run the script every 5 minutes:
 - Add new log sources by adding more entries to the `feeds` list in `config.yaml`.
 - Adjust header enrichment or aging policies as needed per feed.
 
----
-
-## License
-
-This script is provided as-is, without warranty. Use at your own risk.
