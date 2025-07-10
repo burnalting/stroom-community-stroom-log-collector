@@ -327,7 +327,7 @@ def get_verify_from_tls_opts(tls_opts):
 def post_file(file_path, proxies, headers, tls_opts, timeout, test_mode=False):
     if test_mode:
         logging.info("[TEST MODE] Would post file %s to proxies: %s", file_path, proxies)
-        return True  # Simulate success
+        return True 
 
     verify = get_verify_from_tls_opts(tls_opts)
     with open(file_path, 'rb') as f:
@@ -389,7 +389,7 @@ def process_log_files(feed, state_dir, state, queue_dir, host_headers):
     last_ts = None
     if last_ts_str:
         try:
-            last_ts = datetime.datetime.fromisoformat(last_ts_str)
+            last_ts = datetime.datetime.strptime(last_ts_str, "%Y-%m-%dT%H:%M:%S.%f%z")
         except Exception:
             last_ts = None
 
@@ -409,6 +409,7 @@ def process_log_files(feed, state_dir, state, queue_dir, host_headers):
                 logging.warning("Could not stat %s: %s", log_file, e)
         try:
             with open_logfile(log_file) as f:
+                logging.debug("Processing %s", log_file)
                 for line in f:
                     line = line.rstrip('\n')
                     ts = extract_timestamp(line, custom_formats=custom_formats)
@@ -441,7 +442,7 @@ def process_log_files(feed, state_dir, state, queue_dir, host_headers):
             shutil.copyfileobj(f_in, f_out)
         os.remove(out_file)
         out_file = gz_file
-        state["last_timestamp"] = max_ts.isoformat()
+        state["last_timestamp"] = max_ts.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
         save_state(state_dir, feed_name, state)
         logging.info("Queued new file %s for feed %s", gz_file, feed_name)
     return out_file
@@ -450,7 +451,8 @@ def post_queued_files(feed, queue_dir, proxies, headers, tls_opts, timeout, test
     queue_files = sorted(glob.glob(os.path.join(queue_dir, f"{feed['feed_name']}_*.gz")), key=os.path.getctime)
     for f in queue_files:
         if post_file(f, proxies, headers, tls_opts, timeout, test_mode=test_mode):
-            os.remove(f)
+            if test_mode == False:
+                os.remove(f)
         else:
             break
 
@@ -489,4 +491,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
