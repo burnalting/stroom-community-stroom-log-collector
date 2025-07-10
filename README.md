@@ -30,61 +30,70 @@ This Python script collects new log lines from rotated log files, enriches them 
 
 ## Example `config.yaml`
 
+```
+# Main list of Stroom proxy endpoints to post logs to (failover order)
 stroom_proxies:
+  - https://stroom-proxy1.example.com/stroom/datafeed
+  - https://stroom-proxy2.example.com/stroom/datafeed
 
-https://stroom-proxy1.example.com/stroom/datafeed
-
-https://stroom-proxy2.example.com/stroom/datafeed
+# TLS/SSL configuration for HTTPS requests
 tls:
-ca_cert: /etc/ssl/certs/ca-bundle.crt
+  ca_cert: "/etc/ssl/certs/ca-bundle.crt"  # Path to CA bundle for server verification
+  # ca_cert: "false"                       # (string "false" disables verification, not recommended for production)
+  # client_cert: "/etc/ssl/certs/client.crt" # (Optional) Path to client certificate for mutual TLS
+  # client_key: "/etc/ssl/private/client.key" # (Optional) Path to client key for mutual TLS
 
-client_cert: /etc/ssl/certs/client.crt
-client_key: /etc/ssl/private/client.key
+# Default timeout (in seconds) for posting logs to proxies
 timeout_seconds: 10
+
+# List of log sources ("feeds") to monitor and post
 feeds:
+  - name: syslog                         # Unique identifier for this feed (used in state file)
+    log_pattern: /var/log/syslog*        # Glob pattern for log files (rotated and base)
+    feed_name: SYSLOG_FEED               # Stroom feed name to use in HTTP header
+    proxy_overrides:
+      - https://custom-proxy.example.com/stroom/datafeed  # (Optional) Use these proxies for this feed only
+    headers:                             # (Optional) Additional HTTP headers for this feed
+      Environment: Production
+      LogType: Syslog
+    custom_formats:                      # (Optional) List of custom timestamp regex/format pairs
+      - regex: '^([A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})'
+        format: '%b %d %H:%M:%S'         # For syslog: e.g. "Jul  7 14:32:01"
+      - regex: '^(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2})'
+        format: '%d/%m/%Y %H:%M:%S'      # e.g. "07/07/2025 14:32:01"
+    enrich_ip: true                      # (Optional) If true, append FQDNs for all IPs in each line
+    queue_time_limit_days: 32            # (Optional) Max age (days) for queued files for this feed
+    queue_size_limit_mb: 8192            # (Optional) Max queue size (MB) for this feed
+    timeout_seconds: 20                  # (Optional) Override global timeout for this feed
 
-name: syslog
-log_pattern: /var/log/syslog*
-feed_name: SYSLOG_FEED
+  - name: authlog
+    log_pattern: /var/log/auth.log*
+    feed_name: AUTH_FEED
+    headers:
+      Environment: Production
+      LogType: Auth
+    enrich_ip: true
 
-proxy_overrides:
+  - name: nginx_access
+    log_pattern: /var/log/nginx/access.log*
+    feed_name: NGINX_ACCESS_FEED
+    headers:
+      Environment: Production
+      LogType: NginxAccess
+    custom_formats:                      # (Optional) List of custom timestamp regex/format pairs
+      - regex: '^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(?:Z|[+-]\d{2}:?\d{2}))'
+        format: '%Y-%m-%dT%H:%M:%S.%f%z' # For 2025-07-07T07:45:02.000+10:00
+      - regex: '^([A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})'
+        format: '%b %d %H:%M:%S'         # For syslog: e.g. "Jul  7 14:32:01"
+      - regex: '^(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2})'
+        format: '%d/%m/%Y %H:%M:%S'      # e.g. "07/07/2025 14:32:01"
+    enrich_ip: true
 
-https://custom-proxy.example.com/stroom/datafeed
-headers:
-Environment: Production
-LogType: Syslog
-custom_formats:
-
-regex: '^([A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})'
-format: '%b %d %H:%M:%S'
-
-regex: '^(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2})'
-format: '%d/%m/%Y %H:%M:%S'
-timestamp_format: "%Y-%m-%dT%H:%M:%S%z"
-enrich_ip: true
-queue_time_limit_days: 16
-queue_size_limit_mb: 2048
-timeout_seconds: 20
-
-name: authlog
-log_pattern: /var/log/auth.log*
-feed_name: AUTH_FEED
-headers:
-Environment: Production
-LogType: Auth
-enrich_ip: true
-
-name: nginx_access
-log_pattern: /var/log/nginx/access.log*
-feed_name: NGINX_ACCESS_FEED
-headers:
-Environment: Production
-LogType: NginxAccess
-enrich_ip: true
+# Default retention/queue settings (used if not overridden per-feed)
 defaults:
-queue_time_limit_days: 16
-queue_size_limit_mb: 2048
-
+  queue_time_limit_days: 21        # Max age (days) for queued files
+  queue_size_limit_mb: 2048        # Max total size (MB) for queued files
+```
 
 ---
 
@@ -93,6 +102,7 @@ queue_size_limit_mb: 2048
 | YAML Key                        | Description                                                                                           |
 |----------------------------------|------------------------------------------------------------------------------------------------------|
 | `stroom_proxies`                 | List of default Stroom proxy URLs.                                                                   |
+| `timeout_seconds`                | Default in seconds when posting to a stroom proxy                                                    |
 | `tls`                            | TLS config for authentication (see below).                                                           |
 | `feeds`                          | List of log sources, each with:                                                                      |
 | `feeds[].name`                   | Unique feed name.                                                                                    |
