@@ -237,6 +237,137 @@ To run the script every 5 minutes:
 
 */5 * * * * /usr/bin/python3 /opt/stroom/stroom_log_collector/stroom_log_collector/stroom_log_collector.py --config /opt/stroom/stroom_log_collector/config.yaml --state-dir /opt/stroom/stroom_log_collector/state --queue-dir /opt/stroom/stroom_log_collector/queue --log-file /var/log/stroom_log_collector.log
 
+---
+
+## Example
+
+Consider the log file(s) produced by the [stroom-community-linuxauditd-agent](https://github.com/burnalting/stroom-community-linuxauditd-agent). A standard deployment may result in the following log files being present in `/var/log`, where we see the current log file and rolled over compressed log files.
+
+```
+/var/log/stroom_auditd_auditing.log
+/var/log/stroom_auditd_auditing.log-20250704.gz
+/var/log/stroom_auditd_auditing.log-20250705.gz
+/var/log/stroom_auditd_auditing.log-20250706.gz
+/var/log/stroom_auditd_auditing.log-20250707.gz
+/var/log/stroom_auditd_auditing.log-20250708.gz
+/var/log/stroom_auditd_auditing.log-20250709.gz
+/var/log/stroom_auditd_auditing.log-20250710.gz
+```
+
+The file `/var/log/stroom_auditd_auditing.log` contains entries like
+
+```
+...
+2025-07-10T18:40:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Send status: [200] SUCCESS  Audit Log: ./auditdProcessed.35022.1752135301.gz Size: 12K ProcessTime: 0 Feed: LINUX-AUDITD-AUSEARCH-V3-EVENTS URL: https://v7stroom.swtf.dyndns.org/stroom/datafeed
+2025-07-10T18:40:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Send status: [200] SUCCESS  Audit Log: ./auditdProcessed.36610.1752136202.gz Size: 28K ProcessTime: 0 Feed: LINUX-AUDITD-AUSEARCH-V3-EVENTS URL: https://v7stroom.swtf.dyndns.org/stroom/datafeed
+2025-07-10T18:40:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Removed lock /opt/stroom/auditd/locks/stroom_auditd_feeder.sh.lck for 37165
+2025-07-10T18:45:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Obtained lock for 37753 in /opt/stroom/auditd/locks/stroom_auditd_feeder.sh.lck
+2025-07-10T18:45:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Start gathering audit into /opt/stroom/auditd/queue/auditdProcessed.37753.1752137101.gz
+2025-07-10T18:45:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Created disconnect package file Audit Log: ./auditdProcessed.37753.1752137101.gz Size: 12K ProcessTime: 0 Feed: LINUX-AUDITD-AUSEARCH-V3-EVENTS PkgFn: E_auditdProcessed.37753.1752137101.tar
+2025-07-10T18:45:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Removed lock /opt/stroom/auditd/locks/stroom_auditd_feeder.sh.lck for 37753
+2025-07-10T18:50:02.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Obtained lock for 38724 in /opt/stroom/auditd/locks/stroom_auditd_feeder.sh.lck
+2025-07-10T18:50:02.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Disconnect package directory, /opt/stroom/auditd/disconnected, was empty. No files processed
+2025-07-10T18:50:02.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Removed lock /opt/stroom/auditd/locks/stroom_auditd_feeder.sh.lck for 38724
+2025-07-10T19:00:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Obtained lock for 39303 in /opt/stroom/auditd/locks/stroom_auditd_feeder.sh.lck
+2025-07-10T19:00:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Start gathering audit into /opt/stroom/auditd/queue/auditdProcessed.39303.1752138001.gz
+2025-07-10T19:00:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Created disconnect package file Audit Log: ./auditdProcessed.39303.1752138001.gz Size: 32K ProcessTime: 0 Feed: LINUX-AUDITD-AUSEARCH-V3-EVENTS PkgFn: E_auditdProcessed.39303.1752138001.tar
+2025-07-10T19:00:01.000+10:00 stroom_auditd_feeder.sh swtf.somedomain.org: Removed lock /opt/stroom/auditd/locks/stroom_auditd_feeder.sh.lck for 39303
+```
+
+A configuration file to monitor and post events to a stroom proxy for these logs might look like
+
+```
+# Main list of Stroom proxy endpoints to post logs to (failover order)
+stroom_proxies:
+  - https://v7stroom-proxy.somedomain.org/stroom/datafeed
+
+# TLS/SSL configuration for HTTPS requests
+tls:
+  ca_cert: "false"                       # (string "false" disables verification, not recommended for production)
+
+# Default timeout (in seconds) for posting logs to proxies
+timeout_seconds: 10
+
+# List of log sources ("feeds") to monitor and post
+feeds:
+  - name: StroomAuditd                                   # Unique identifier for this feed (used in state file)
+    log_pattern: /var/log/stroom_auditd_auditing.log*    # Glob pattern for log files (rotated and base)
+    feed_name: STROOM_AUDIT_AGENT-V1.0-EVENTS            # Stroom feed name to use in HTTP header
+    headers:                             # (Optional) Additional HTTP headers for this feed
+      Environment: Production
+      LogType: Stroom Agent
+    custom_formats:                      # (Optional) List of custom timestamp regex/format pairs
+      - regex: '^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(?:Z|[+-]\d{2}:?\d{2}))'
+        format: '%Y-%m-%dT%H:%M:%S.%f%z' # For 2025-07-07T07:45:02.000+10:00
+    enrich_ip: false                      # (Optional) If true, append FQDNs for all IPs in each line
+    queue_time_limit_days: 7             # (Optional) Max age (days) for queued files for this feed
+    queue_size_limit_mb: 500             # (Optional) Max queue size (MB) for this feed
+    timeout_seconds: 20                  # (Optional) Override global timeout for this feed
+
+# Default retention/queue settings (used if not overridden per-feed)
+defaults:
+  queue_time_limit_days: 14        # Max age (days) for queued files
+  queue_size_limit_mb: 1024        # Max total size (MB) for queued files
+```
+
+The first execution may show
+
+```
+# ./stroom_log_collector.py --config stroom_log_collector.yml --state-dir state --queue-dir queue --debug  --stdout
+2025-07-10T20:23:05.148+1000 INFO Log Collector started with config: stroom_log_collector.yml, state_dir: state, queue_dir: queue
+2025-07-10T20:23:05.162+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250704.gz
+2025-07-10T20:23:05.182+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250705.gz
+2025-07-10T20:23:05.196+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250706.gz
+2025-07-10T20:23:09.199+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250707.gz
+2025-07-10T20:23:11.345+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250708.gz
+2025-07-10T20:23:11.354+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250709.gz
+2025-07-10T20:23:11.373+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250710.gz
+2025-07-10T20:23:11.399+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log
+2025-07-10T20:23:12.659+1000 INFO Queued new file queue/STROOM_AUDIT_AGENT-V1.0-EVENTS_20250710_202001+1000.log.gz for feed STROOM_AUDIT_AGENT-V1.0-EVENTS
+2025-07-10T20:23:12.675+1000 DEBUG Starting new HTTPS connection (1): v7stroom-proxy.somedomain.org:443
+2025-07-10T20:23:13.635+1000 DEBUG https://v7stroom-proxy.somedomain.org:443 "POST /stroom/datafeed HTTP/1.1" 200 None
+2025-07-10T20:23:13.636+1000 INFO Posted file queue/STROOM_AUDIT_AGENT-V1.0-EVENTS_20250710_202001+1000.log.gz to https://v7stroom-proxy.somedomain.org/stroom/datafeed
+2025-07-10T20:23:13.638+1000 INFO Log Collector finished.
+# 
+```
+
+Running the script again, before additional data is in `/var/log/stroom_auditd_auditding.log`, would show
+
+```
+# ./stroom_log_collector.py --config stroom_log_collector_swtf.yml --state-dir state --queue-dir queue --debug  --stdout
+2025-07-10T20:25:45.350+1000 INFO Log Collector started with config: stroom_log_collector.yml, state_dir: state, queue_dir: queue
+2025-07-10T20:25:45.373+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250704.gz (mtime 1751562901.0 <= last_ts 1752142801.0)
+2025-07-10T20:25:45.374+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250705.gz (mtime 1751651101.0 <= last_ts 1752142801.0)
+2025-07-10T20:25:45.374+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250706.gz (mtime 1751736601.0 <= last_ts 1752142801.0)
+2025-07-10T20:25:45.375+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250707.gz (mtime 1751822401.0 <= last_ts 1752142801.0)
+2025-07-10T20:25:45.375+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250708.gz (mtime 1751910001.0 <= last_ts 1752142801.0)
+2025-07-10T20:25:45.375+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250709.gz (mtime 1751994901.0 <= last_ts 1752142801.0)
+2025-07-10T20:25:45.376+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250710.gz (mtime 1752099001.0 <= last_ts 1752142801.0)
+2025-07-10T20:25:45.376+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log
+2025-07-10T20:25:45.382+1000 INFO Log Collector finished.
+#
+```
+But if we wait, we see
+
+```
+# ./stroom_log_collector.py --config stroom_log_collector_swtf.yml --state-dir state --queue-dir queue --debug  --stdout
+2025-07-10T20:33:22.103+1000 INFO Log Collector started with config: stroom_log_collector.yml, state_dir: state, queue_dir: queue
+2025-07-10T20:33:22.122+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250704.gz (mtime 1751562901.0 <= last_ts 1752142801.0)
+2025-07-10T20:33:22.122+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250705.gz (mtime 1751651101.0 <= last_ts 1752142801.0)
+2025-07-10T20:33:22.122+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250706.gz (mtime 1751736601.0 <= last_ts 1752142801.0)
+2025-07-10T20:33:22.122+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250707.gz (mtime 1751822401.0 <= last_ts 1752142801.0)
+2025-07-10T20:33:22.123+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250708.gz (mtime 1751910001.0 <= last_ts 1752142801.0)
+2025-07-10T20:33:22.123+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250709.gz (mtime 1751994901.0 <= last_ts 1752142801.0)
+2025-07-10T20:33:22.123+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250710.gz (mtime 1752099001.0 <= last_ts 1752142801.0)
+2025-07-10T20:33:22.123+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log
+2025-07-10T20:33:22.132+1000 INFO Queued new file queue/STROOM_AUDIT_AGENT-V1.0-EVENTS_20250710_203002+1000.log.gz for feed STROOM_AUDIT_AGENT-V1.0-EVENTS
+2025-07-10T20:33:22.135+1000 DEBUG Starting new HTTPS connection (1): v7stroom-proxy.somedomain.org:443
+2025-07-10T20:33:22.170+1000 DEBUG https://v7stroom-proxy.somedomain.org:443 "POST /stroom/datafeed HTTP/1.1" 200 None
+2025-07-10T20:33:22.170+1000 INFO Posted file queue/STROOM_AUDIT_AGENT-V1.0-EVENTS_20250710_203002+1000.log.gz to https://v7stroom-proxy.somedomain.org/stroom/datafeed
+2025-07-10T20:33:22.171+1000 INFO Log Collector finished.
+#
+```
+
 
 ---
 
