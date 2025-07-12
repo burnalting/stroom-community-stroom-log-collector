@@ -365,7 +365,7 @@ But if we wait, we see
 
 ## Example 2
 
-In this example, we want to monitor an Nginx(https://nginx.org) access log that has been configured to use the Nginx blackboxSSLUser logging format. This format
+In this example, we want to monitor an [Nginx](https://nginx.org) access log that has been configured to use the Nginx blackboxSSLUser logging format. This format
 is configured as per
 
 ```
@@ -452,11 +452,13 @@ of resolving ip addresses)
 2025-07-12T15:48:17.101+1000 INFO Queued new file nqueue/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz for feed NginxAccess-BlackBox-V1.0-EVENTS
 2025-07-12T15:48:17.101+1000 INFO [TEST MODE] Would post file nqueue/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz to proxies: ['https://v7stroom-proxy.somedomain.org/stroom/datafeed']
 2025-07-12T15:48:17.102+1000 INFO Log Collector finished.
+# 
 ```
 
 And if we look at the queued file, we see some of the ip addresses identifed and, if possible, resolved
 
 ```
+# gunzip -c nqueue/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz
 1.1.1.1 1.1.1.1/54321 - [2025-07-12T10:15:01+10:00] - "CN=Alice Smith,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "GET / HTTP/1.1" 200 0.123 512/1024/1024 "https://cloudflare.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" cloudflare.com/443 "/" _resolv_: 1.1.1.1=one.one.one.one
 139.130.205.54 139.130.205.54/49201 - [2025-07-12T10:15:05+10:00] - "-" "POST /login HTTP/1.1" 302 0.234 256/512/512 "https://www.infrastructure.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" infrastructure.gov.au/443 "?redirect=home" _resolv_: 139.130.205.54=-
 152.91.14.133 152.91.14.133/40001 - [2025-07-12T10:15:09+10:00] - "CN=Charlie Brown,OU=Users,O=Example Corp,L=Brisbane,ST=QLD,C=AU" "GET /news HTTP/1.1" 200 0.198 1024/2048/2048 "https://www.ato.gov.au/" "Mozilla/5.0 (Linux; Android 11)" ato.gov.au/443 "" _resolv_: 152.91.14.133=-
@@ -477,6 +479,7 @@ And if we look at the queued file, we see some of the ip addresses identifed and
 203.62.8.1 203.62.8.1/49154 - [2025-07-12T10:15:58+10:00] - "-" "GET /api/melbourne HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?city=melbourne" _resolv_: 203.62.8.1=-
 203.62.64.2 203.62.64.2/53216 - [2025-07-12T10:16:01+10:00] - "CN=Sam Wong,OU=Users,O=Example Corp,L=Perth,ST=WA,C=AU" "GET /api/perth HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" education.act.gov.au/443 "?city=perth" _resolv_: 203.62.64.2=-
 203.50.2.73 203.50.2.73/54323 - [2025-07-12T10:16:04+10:00] - "-" "GET /api/hobart HTTP/1.1" 200 0.088 300/600/600 "https://www.telstra.com.au/" "Mozilla/5.0 (Linux; Android 10)" telstra.com.au/443 "?city=hobart" _resolv_: 203.50.2.73=sdns2.telstra.net
+# 
 ```
 
 ---
