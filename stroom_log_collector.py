@@ -262,8 +262,12 @@ def extract_timestamp(line, custom_formats=None):
             if m:
                 ts = m.group(1)
                 try:
+                    # Remove colon in timezone if necessary for Python <3.7
+                    if fmt.endswith('%z') and re.search(r'[+-]\d{2}:\d{2}$', ts):
+                        ts = ts[:-3] + ts[-2:]
                     return datetime.datetime.strptime(ts, fmt)
-                except Exception:
+                except Exception as e:
+                    # logging.debug("String %s for custom format %s, exception %s", ts, fmt, e)
                     continue
     # 2. Fallback to built-in ISO8601 regexes
     for regex, fmt in ISO8601_REGEXES:
@@ -276,6 +280,7 @@ def extract_timestamp(line, custom_formats=None):
                     ts = ts[:-3] + ts[-2:]
                 return datetime.datetime.strptime(ts, fmt)
             except Exception:
+                    # logging.debug("String %s for ISO8601 format %s, exception %s", ts, fmt, e)
                 continue
     return None
 
@@ -414,6 +419,7 @@ def process_log_files(feed, state_dir, state, queue_dir, host_headers):
                     line = line.rstrip('\n')
                     ts = extract_timestamp(line, custom_formats=custom_formats)
                     if ts is None:
+                        logging.debug("Timestamp not matched in line %s", line)
                         continue
                     if last_ts and ts <= last_ts:
                         continue
@@ -429,6 +435,8 @@ def process_log_files(feed, state_dir, state, queue_dir, host_headers):
                     if max_ts is None or ts > max_ts:
                         max_ts = ts
         except Exception as e:
+            # Note, if you get the error 'No such group', the regex used for timestamp extraction probably does not have a capturing group or
+            # the regex is failing
             logging.warning("Failed to process log file %s: %s", log_file, e)
 
     out_file = None
@@ -491,3 +499,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

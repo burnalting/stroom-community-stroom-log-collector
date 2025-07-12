@@ -23,7 +23,6 @@ This Python script collects new log lines from rotated log files, enriches them 
 - **File aging:** Queued files are deleted if they exceed a time or size limit.
 - **Configurable via YAML and command-line:** All settings in a single YAML file and/or via CLI.
 - **ISO8601 localtime execution logs:** All actions are logged with local ISO8601 timestamps.
-- **Option to write debug/info logs to standard output** (`--stdout` flag).
 - **Option to run in test mode:** Files are generated but not posted to any proxy (`--test` flag).
 
 ---
@@ -139,10 +138,8 @@ defaults:
 | `--config`     | Path to YAML configuration file    | `config.yaml`               |
 | `--state-dir`  | Directory for state files          | `state`                     |
 | `--queue-dir`  | Directory for queue files          | `queue`                     |
-| `--log-file`   | Path to execution log file         | `stroom_log_collector.log`  |
 | `--debug`      | Enable debug logging               | Off (INFO level)            |
 | `--test`       | Generate files but do not post     | Off                         |
-| `--stdout`     | Write debug/info logs to stdout    | Off                         |
 
 ---
 
@@ -173,8 +170,6 @@ python3 stroom_log_collector.py
 --config /opt/stroom/stroom_log_collector/config.yaml
 --state-dir /opt/stroom/stroom_log_collector/state
 --queue-dir /opt/stroom/stroom_log_collector/queue
---log-file /var/log/stroom_log_collector.log
---stdout
 
 
 - The script can be scheduled via cron for regular execution.
@@ -206,7 +201,7 @@ The script adds the following headers to every post:
  - Plus any custom headers from the feed config
 
 - **IP/FQDN Enrichment:**  
-If `enrich_ip: true`, each log line is appended with `_resolv_:{ip}={fqdn} {ip}={fqdn} {ip}={fqdn}` for every detected IP address (IPv4/IPv6).
+If `enrich_ip: true`, each log line is appended with `_resolv_: {ip}={fqdn} {ip}={fqdn} {ip}={fqdn}` for every detected IP address (IPv4/IPv6).
 
 - **File Aging:**  
 Files in the queue are deleted if:
@@ -215,7 +210,7 @@ Files in the queue are deleted if:
  - Defaults are set in the defaults configuration item
 
 - **Execution Logging:**  
-All script activity is logged in ISO8601 localtime format to the specified log file and, if `--stdout` is used, to standard output.
+All script activity is logged in ISO8601 localtime format to standard output.
 
 ---
 
@@ -235,11 +230,11 @@ The script collects the host's nameservers using multiple mechanisms:
 
 To run the script every 5 minutes:
 
-*/5 * * * * /usr/bin/python3 /opt/stroom/stroom_log_collector/stroom_log_collector/stroom_log_collector.py --config /opt/stroom/stroom_log_collector/config.yaml --state-dir /opt/stroom/stroom_log_collector/state --queue-dir /opt/stroom/stroom_log_collector/queue --log-file /var/log/stroom_log_collector.log
+*/5 * * * * /usr/bin/python3 /opt/stroom/stroom_log_collector/stroom_log_collector/stroom_log_collector.py --config /opt/stroom/stroom_log_collector/config.yaml --state-dir /opt/stroom/stroom_log_collector/state --queue-dir /opt/stroom/stroom_log_collector/queue > /var/log/stroom_log_collector.log 2>&1
 
 ---
 
-## Example
+## Example 1
 
 Consider the log file(s) produced by the [stroom-community-linuxauditd-agent](https://github.com/burnalting/stroom-community-linuxauditd-agent). A standard deployment may result in the following log files being present in `/var/log`, where we see the current log file and rolled over compressed log files.
 
@@ -313,7 +308,7 @@ defaults:
 The first execution may show
 
 ```
-# ./stroom_log_collector.py --config stroom_log_collector.yml --state-dir state --queue-dir queue --debug  --stdout
+# ./stroom_log_collector.py --config stroom_log_collector.yml --state-dir state --queue-dir queue --debug
 2025-07-10T20:23:05.148+1000 INFO Log Collector started with config: stroom_log_collector.yml, state_dir: state, queue_dir: queue
 2025-07-10T20:23:05.162+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250704.gz
 2025-07-10T20:23:05.182+1000 DEBUG Processing /var/log/stroom_auditd_auditing.log-20250705.gz
@@ -334,7 +329,7 @@ The first execution may show
 Running the script again, before additional data is in `/var/log/stroom_auditd_auditding.log`, would show
 
 ```
-# ./stroom_log_collector.py --config stroom_log_collector_swtf.yml --state-dir state --queue-dir queue --debug  --stdout
+# ./stroom_log_collector.py --config stroom_log_collector_swtf.yml --state-dir state --queue-dir queue --debug
 2025-07-10T20:25:45.350+1000 INFO Log Collector started with config: stroom_log_collector.yml, state_dir: state, queue_dir: queue
 2025-07-10T20:25:45.373+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250704.gz (mtime 1751562901.0 <= last_ts 1752142801.0)
 2025-07-10T20:25:45.374+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250705.gz (mtime 1751651101.0 <= last_ts 1752142801.0)
@@ -350,7 +345,7 @@ Running the script again, before additional data is in `/var/log/stroom_auditd_a
 But if we wait, we see
 
 ```
-# ./stroom_log_collector.py --config stroom_log_collector_swtf.yml --state-dir state --queue-dir queue --debug  --stdout
+# ./stroom_log_collector.py --config stroom_log_collector_swtf.yml --state-dir state --queue-dir queue --debug
 2025-07-10T20:33:22.103+1000 INFO Log Collector started with config: stroom_log_collector.yml, state_dir: state, queue_dir: queue
 2025-07-10T20:33:22.122+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250704.gz (mtime 1751562901.0 <= last_ts 1752142801.0)
 2025-07-10T20:33:22.122+1000 DEBUG Skipping /var/log/stroom_auditd_auditing.log-20250705.gz (mtime 1751651101.0 <= last_ts 1752142801.0)
@@ -368,6 +363,121 @@ But if we wait, we see
 #
 ```
 
+## Example 2
+
+In this example, we want to monitor an Nginx(https://nginx.org) access log that has been configured to use the Nginx blackboxSSLUser logging format. This format
+is configured as per
+
+```
+log_format blackboxSSLUser
+  '$remote_addr $remote_addr/$remote_port - '
+  '[$time_iso8601] - '
+  '"$ssl_client_s_dn" "$request" $status '
+  '$request_time $request_length/$bytes_sent/$body_bytes_sent '
+  '"$http_referer" "$http_user_agent" $server_name/$server_port "$is_args$request_uri"';
+access_log /var/log/nginx/blackbox_ssl_user.log blackboxSSLUser;
+```
+
+So our configuration file for this might look like
+
+```
+# Main list of Stroom proxy endpoints to post logs to (failover order)
+stroom_proxies:
+  - https://v7stroom-proxy.somedomain.org/stroom/datafeed
+
+# TLS/SSL configuration for HTTPS requests
+tls:
+  ca_cert: "false"                       # (string "false" disables verification, not recommended for production)
+
+# Default timeout (in seconds) for posting logs to proxies
+timeout_seconds: 10
+
+# List of log sources ("feeds") to monitor and post
+feeds:
+  - name: StroomNginx                                   # Unique identifier for this feed (used in state file)
+    log_pattern: /var/log/nginx/blackbox_ssl_user.log*  # Glob pattern for log files (rotated and base)
+    feed_name: NginxAccess-BlackBox-V1.0-EVENTS         # Stroom feed name to use in HTTP header
+    headers:                             # (Optional) Additional HTTP headers for this feed
+      Environment: Production
+      LogType: Nginx Access for capabilty XXX
+    custom_formats:                      # (Optional) List of custom timestamp regex/format pairs
+      - regex: '\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2})\]'
+        format: '%Y-%m-%dT%H:%M:%S%z'  # For 2025-07-12T10:16:37+10:00
+      - regex: '\[(\d{1,2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2} [+-]\d{4})\]'
+        format: '%d/%b/%Y:%H:%M:%S %z' # For 12/Jul/2025:03:24:53 +0000
+    enrich_ip: true                      # (Optional) If true, append FQDNs for all IPs in each line
+    queue_time_limit_days: 7             # (Optional) Max age (days) for queued files for this feed
+    queue_size_limit_mb: 500             # (Optional) Max queue size (MB) for this feed
+    timeout_seconds: 20                  # (Optional) Override global timeout for this feed
+
+# Default retention/queue settings (used if not overridden per-feed)
+defaults:
+  queue_time_limit_days: 14        # Max age (days) for queued files
+  queue_size_limit_mb: 1024        # Max total size (MB) for queued files
+```
+
+We will use some sample Nginx access logs generated from the internet
+
+```
+1.1.1.1 1.1.1.1/54321 - [2025-07-12T10:15:01+10:00] - "CN=Alice Smith,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "GET / HTTP/1.1" 200 0.123 512/1024/1024 "https://cloudflare.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" cloudflare.com/443 "/"
+139.130.205.54 139.130.205.54/49201 - [2025-07-12T10:15:05+10:00] - "-" "POST /login HTTP/1.1" 302 0.234 256/512/512 "https://www.infrastructure.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" infrastructure.gov.au/443 "?redirect=home"
+152.91.14.133 152.91.14.133/40001 - [2025-07-12T10:15:09+10:00] - "CN=Charlie Brown,OU=Users,O=Example Corp,L=Brisbane,ST=QLD,C=AU" "GET /news HTTP/1.1" 200 0.198 1024/2048/2048 "https://www.ato.gov.au/" "Mozilla/5.0 (Linux; Android 11)" ato.gov.au/443 ""
+202.124.241.178 202.124.241.178/50123 - [2025-07-12T10:15:12+10:00] - "-" "DELETE /api/item/123 HTTP/1.1" 204 0.178 128/256/256 "https://www.abc.net.au/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" abc.net.au/443 "?delete=123"
+128.250.1.21 128.250.1.21/55000 - [2025-07-12T10:15:15+10:00] - "CN=Evan Wright,OU=Users,O=Example Corp,L=Adelaide,ST=SA,C=AU" "PUT /profile HTTP/1.1" 200 0.201 768/1536/1536 "https://www.unimelb.edu.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" unimelb.edu.au/443 "?update=1"
+149.171.124.3 149.171.124.3/60123 - [2025-07-12T10:15:18+10:00] - "-" "GET /status HTTP/1.1" 200 0.045 64/128/128 "-" "curl/7.80.0" unsw.edu.au/443 ""
+54.230.110.108 54.230.110.108/41001 - [2025-07-12T10:15:21+10:00] - "CN=George Hall,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "PATCH /api/patch HTTP/1.1" 200 0.134 512/1024/1024 "https://www.sbs.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" sbs.com.au/443 "?patch=7"
+202.7.247.33 202.7.247.33/53000 - [2025-07-12T10:15:24+10:00] - "-" "GET /info HTTP/1.1" 200 0.065 128/256/256 "https://www.aph.gov.au/" "Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X)" aph.gov.au/443 ""
+203.50.2.71 203.50.2.71/41234 - [2025-07-12T10:15:28+10:00] - "CN=Ian O'Neil,OU=Users,O=Example Corp,L=GoldCoast,ST=QLD,C=AU" "HEAD /api/ping HTTP/1.1" 200 0.011 32/64/64 "-" "curl/7.68.0" telstra.com.au/443 ""
+203.24.100.1 203.24.100.1/60002 - [2025-07-12T10:15:32+10:00] - "-" "OPTIONS /api/options HTTP/1.1" 200 0.008 16/32/32 "-" "Mozilla/5.0 (Linux; Android 12)" geelongadvertiser.com.au/443 ""
+203.55.21.1 203.55.21.1/49153 - [2025-07-12T10:15:35+10:00] - "CN=Kevin Tran,OU=Users,O=Example Corp,L=Geelong,ST=VIC,C=AU" "GET /help HTTP/1.1" 404 0.052 0/0/0 "https://www.thechronicle.com.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" thechronicle.com.au/443 "?help"
+202.86.144.66 202.86.144.66/53215 - [2025-07-12T10:15:39+10:00] - "-" "GET /user HTTP/1.1" 200 0.076 256/512/512 "https://www.illawarramercury.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" illawarramercury.com.au/443 "?user=Linda"
+203.2.218.214 203.2.218.214/54322 - [2025-07-12T10:15:42+10:00] - "CN=Matt Lee,OU=Users,O=Example Corp,L=Ballarat,ST=VIC,C=AU" "GET /api/ballarat HTTP/1.1" 200 0.088 300/600/600 "https://www.abc.net.au/" "Mozilla/5.0 (Linux; Android 10)" abc.net.au/443 "?city=ballarat"
+203.62.3.1 203.62.3.1/49202 - [2025-07-12T10:15:45+10:00] - "-" "POST /api/login HTTP/1.1" 401 0.210 0/0/0 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?login=fail"
+1.0.0.1 1.0.0.1/40002 - [2025-07-12T10:15:48+10:00] - "CN=Olga Ivanova,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "GET /api/darwin HTTP/1.1" 200 0.099 256/512/512 "https://cloudflare.com/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" cloudflare.com/443 "?city=darwin"
+203.50.2.72 203.50.2.72/50124 - [2025-07-12T10:15:51+10:00] - "-" "GET /api/canberra HTTP/1.1" 200 0.134 512/1024/1024 "https://www.telstra.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" telstra.com.au/443 "?city=canberra"
+203.62.4.1 203.62.4.1/49203 - [2025-07-12T10:15:54+10:00] - "CN=Quinn Taylor,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "POST /api/post HTTP/1.1" 201 0.256 1024/2048/2048 "https://www.education.act.gov.au/" "curl/7.68.0" education.act.gov.au/443 "?post=true"
+203.62.8.1 203.62.8.1/49154 - [2025-07-12T10:15:58+10:00] - "-" "GET /api/melbourne HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?city=melbourne"
+203.62.64.2 203.62.64.2/53216 - [2025-07-12T10:16:01+10:00] - "CN=Sam Wong,OU=Users,O=Example Corp,L=Perth,ST=WA,C=AU" "GET /api/perth HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" education.act.gov.au/443 "?city=perth"
+203.50.2.73 203.50.2.73/54323 - [2025-07-12T10:16:04+10:00] - "-" "GET /api/hobart HTTP/1.1" 200 0.088 300/600/600 "https://www.telstra.com.au/" "Mozilla/5.0 (Linux; Android 10)" telstra.com.au/443 "?city=hobart"
+```
+
+So we now execute with debug and test mode, so we don't post the file to the configured stroom proxy (as we want to see the effect
+of resolving ip addresses)
+
+
+```
+# ./stroom_log_collector.py --config stroom_log_collector_nginx.yml --state-dir nstate --queue-dir nqueue --debug --test
+2025-07-12T15:47:56.450+1000 INFO Log Collector started with config: nginx_samples.yml, state_dir: ns, queue_dir: nq
+2025-07-12T15:47:56.465+1000 DEBUG Processing /var/log/nginx/blackbox_ssl_user.log
+2025-07-12T15:48:17.101+1000 INFO Queued new file nqueue/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz for feed NginxAccess-BlackBox-V1.0-EVENTS
+2025-07-12T15:48:17.101+1000 INFO [TEST MODE] Would post file nqueue/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz to proxies: ['https://v7stroom-proxy.somedomain.org/stroom/datafeed']
+2025-07-12T15:48:17.102+1000 INFO Log Collector finished.
+```
+
+And if we look at the queued file, we see some of the ip addresses identifed and, if possible, resolved
+
+```
+1.1.1.1 1.1.1.1/54321 - [2025-07-12T10:15:01+10:00] - "CN=Alice Smith,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "GET / HTTP/1.1" 200 0.123 512/1024/1024 "https://cloudflare.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" cloudflare.com/443 "/" _resolv_: 1.1.1.1=one.one.one.one
+139.130.205.54 139.130.205.54/49201 - [2025-07-12T10:15:05+10:00] - "-" "POST /login HTTP/1.1" 302 0.234 256/512/512 "https://www.infrastructure.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" infrastructure.gov.au/443 "?redirect=home" _resolv_: 139.130.205.54=-
+152.91.14.133 152.91.14.133/40001 - [2025-07-12T10:15:09+10:00] - "CN=Charlie Brown,OU=Users,O=Example Corp,L=Brisbane,ST=QLD,C=AU" "GET /news HTTP/1.1" 200 0.198 1024/2048/2048 "https://www.ato.gov.au/" "Mozilla/5.0 (Linux; Android 11)" ato.gov.au/443 "" _resolv_: 152.91.14.133=-
+202.124.241.178 202.124.241.178/50123 - [2025-07-12T10:15:12+10:00] - "-" "DELETE /api/item/123 HTTP/1.1" 204 0.178 128/256/256 "https://www.abc.net.au/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" abc.net.au/443 "?delete=123" _resolv_: 202.124.241.178=redirector.servers.netregistry.net
+128.250.1.21 128.250.1.21/55000 - [2025-07-12T10:15:15+10:00] - "CN=Evan Wright,OU=Users,O=Example Corp,L=Adelaide,ST=SA,C=AU" "PUT /profile HTTP/1.1" 200 0.201 768/1536/1536 "https://www.unimelb.edu.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" unimelb.edu.au/443 "?update=1" _resolv_: 128.250.1.21=-
+149.171.124.3 149.171.124.3/60123 - [2025-07-12T10:15:18+10:00] - "-" "GET /status HTTP/1.1" 200 0.045 64/128/128 "-" "curl/7.80.0" unsw.edu.au/443 "" _resolv_: 149.171.124.3=-
+54.230.110.108 54.230.110.108/41001 - [2025-07-12T10:15:21+10:00] - "CN=George Hall,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "PATCH /api/patch HTTP/1.1" 200 0.134 512/1024/1024 "https://www.sbs.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" sbs.com.au/443 "?patch=7" _resolv_: 54.230.110.108=server-54-230-110-108.osl50.r.cloudfront.net
+202.7.247.33 202.7.247.33/53000 - [2025-07-12T10:15:24+10:00] - "-" "GET /info HTTP/1.1" 200 0.065 128/256/256 "https://www.aph.gov.au/" "Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X)" aph.gov.au/443 "" _resolv_: 202.7.247.33=-
+203.50.2.71 203.50.2.71/41234 - [2025-07-12T10:15:28+10:00] - "CN=Ian O'Neil,OU=Users,O=Example Corp,L=GoldCoast,ST=QLD,C=AU" "HEAD /api/ping HTTP/1.1" 200 0.011 32/64/64 "-" "curl/7.68.0" telstra.com.au/443 "" _resolv_: 203.50.2.71=lon-resolver.telstra.net
+203.24.100.1 203.24.100.1/60002 - [2025-07-12T10:15:32+10:00] - "-" "OPTIONS /api/options HTTP/1.1" 200 0.008 16/32/32 "-" "Mozilla/5.0 (Linux; Android 12)" geelongadvertiser.com.au/443 "" _resolv_: 203.24.100.1=ge0-3-505.core0.per01.eftel.com
+203.55.21.1 203.55.21.1/49153 - [2025-07-12T10:15:35+10:00] - "CN=Kevin Tran,OU=Users,O=Example Corp,L=Geelong,ST=VIC,C=AU" "GET /help HTTP/1.1" 404 0.052 0/0/0 "https://www.thechronicle.com.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" thechronicle.com.au/443 "?help" _resolv_: 203.55.21.1=mx1.a.outbound.createsend.com
+202.86.144.66 202.86.144.66/53215 - [2025-07-12T10:15:39+10:00] - "-" "GET /user HTTP/1.1" 200 0.076 256/512/512 "https://www.illawarramercury.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" illawarramercury.com.au/443 "?user=Linda" _resolv_: 202.86.144.66=n20286z144l66.static.ctmip.net
+203.2.218.214 203.2.218.214/54322 - [2025-07-12T10:15:42+10:00] - "CN=Matt Lee,OU=Users,O=Example Corp,L=Ballarat,ST=VIC,C=AU" "GET /api/ballarat HTTP/1.1" 200 0.088 300/600/600 "https://www.abc.net.au/" "Mozilla/5.0 (Linux; Android 10)" abc.net.au/443 "?city=ballarat" _resolv_: 203.2.218.214=-
+203.62.3.1 203.62.3.1/49202 - [2025-07-12T10:15:45+10:00] - "-" "POST /api/login HTTP/1.1" 401 0.210 0/0/0 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?login=fail" _resolv_: 203.62.3.1=-
+1.0.0.1 1.0.0.1/40002 - [2025-07-12T10:15:48+10:00] - "CN=Olga Ivanova,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "GET /api/darwin HTTP/1.1" 200 0.099 256/512/512 "https://cloudflare.com/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" cloudflare.com/443 "?city=darwin" _resolv_: 1.0.0.1=one.one.one.one
+203.50.2.72 203.50.2.72/50124 - [2025-07-12T10:15:51+10:00] - "-" "GET /api/canberra HTTP/1.1" 200 0.134 512/1024/1024 "https://www.telstra.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" telstra.com.au/443 "?city=canberra" _resolv_: 203.50.2.72=lnip-resolver1.telstra.net
+203.62.4.1 203.62.4.1/49203 - [2025-07-12T10:15:54+10:00] - "CN=Quinn Taylor,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "POST /api/post HTTP/1.1" 201 0.256 1024/2048/2048 "https://www.education.act.gov.au/" "curl/7.68.0" education.act.gov.au/443 "?post=true" _resolv_: 203.62.4.1=-
+203.62.8.1 203.62.8.1/49154 - [2025-07-12T10:15:58+10:00] - "-" "GET /api/melbourne HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?city=melbourne" _resolv_: 203.62.8.1=-
+203.62.64.2 203.62.64.2/53216 - [2025-07-12T10:16:01+10:00] - "CN=Sam Wong,OU=Users,O=Example Corp,L=Perth,ST=WA,C=AU" "GET /api/perth HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" education.act.gov.au/443 "?city=perth" _resolv_: 203.62.64.2=-
+203.50.2.73 203.50.2.73/54323 - [2025-07-12T10:16:04+10:00] - "-" "GET /api/hobart HTTP/1.1" 200 0.088 300/600/600 "https://www.telstra.com.au/" "Mozilla/5.0 (Linux; Android 10)" telstra.com.au/443 "?city=hobart" _resolv_: 203.50.2.73=sdns2.telstra.net
+```
 
 ---
 
