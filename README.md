@@ -549,7 +549,7 @@ And if we look at the queued file, we see some of the ip addresses identifed and
 
     /*
      * This file is part of stroom-community-stroom-log-collector
-     * Copyright (C) 2025 BurnAlting
+     *
      * stroom-community-stroom-log-collector is free software: you can redistribute it and/or modify
      * it under the terms of the GNU General Public License as published by
      * the Free Software Foundation, either version 3 of the License, or

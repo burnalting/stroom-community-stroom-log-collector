@@ -15,8 +15,6 @@ Requires:
     - pyyaml
     - (optional) dnspython for enhanced nameserver discovery
 
-Copyright (C) 2025 BurnAlting
-
 License: GNU GPL v3 or later
 
 """
