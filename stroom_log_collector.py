@@ -25,6 +25,7 @@ import gzip
 import glob
 import shutil
 import socket
+import concurrent.futures
 import struct
 import fcntl
 import time
@@ -735,6 +736,46 @@ def age_out_files(
         deleted_for_age, deleted_for_size, len(files)
     )
 
+def enrich_ips_multithreaded(line: str, max_workers: int = 10) -> str:
+    """
+    Enrich all IP addresses found in the input line with FQDNs using multithreading.
+
+    Args:
+        line (str): The original log line potentially containing IP addresses.
+        max_workers (int): Maximum number of concurrent threads to use for DNS lookups.
+
+    Returns:
+        str: The enriched log line with all resolved IP addresses appended in the format:
+             <original_line> _resolv_: IP1=FQDN1 IP2=FQDN2 ...
+
+    Notes:
+        - IP addresses are extracted via `extract_ips(line)`.
+        - Failed resolutions are replaced with '-' to indicate unknown.
+    """
+    ips = extract_ips(line)
+    if not ips:
+        return line
+
+    resolved_map = {}
+
+    # Thread pool for parallel lookups
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_ip = {executor.submit(resolve_ip, ip): ip for ip in ips}
+        for future in concurrent.futures.as_completed(future_to_ip):
+            ip = future_to_ip[future]
+            try:
+                fqdn = future.result(timeout=3.0)  # Future timeout safety
+            except Exception as e:
+                logging.debug("Failed to resolve %s: %s", ip, e)
+                fqdn = '-'
+            resolved_map[ip] = fqdn
+
+    # Append hostname resolution to the line
+    enriched_line = line + " _resolv_:"
+    for ip in ips:
+        enriched_line += f" {ip}={resolved_map.get(ip, '-')}"
+    return enriched_line
+
 
 def process_log_files(
     feed: dict,
@@ -813,13 +854,8 @@ def process_log_files(
                     if last_ts and ts <= last_ts:
                         continue
                     if enrich_ip:
-                        _first = True
-                        for ip in extract_ips(line):
-                            if _first:
-                                line += f" _resolv_:"
-                                _first = False
-                            fqdn = resolve_ip(ip)
-                            line += f" {ip}={fqdn}"
+                        # Enrich line using multithreaded DNS lookup
+                        line = enrich_ips_multithreaded(line)
                     new_lines.append(line)
                     if max_ts is None or ts > max_ts:
                         max_ts = ts

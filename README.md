@@ -438,26 +438,16 @@ defaults:
 We will use some sample Nginx access logs generated from the internet
 
 ```
-1.1.1.1 1.1.1.1/54321 - [2025-07-12T10:15:01+10:00] - "CN=Alice Smith,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "GET / HTTP/1.1" 200 0.123 512/1024/1024 "https://cloudflare.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" cloudflare.com/443 "/"
-139.130.205.54 139.130.205.54/49201 - [2025-07-12T10:15:05+10:00] - "-" "POST /login HTTP/1.1" 302 0.234 256/512/512 "https://www.infrastructure.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" infrastructure.gov.au/443 "?redirect=home"
-152.91.14.133 152.91.14.133/40001 - [2025-07-12T10:15:09+10:00] - "CN=Charlie Brown,OU=Users,O=Example Corp,L=Brisbane,ST=QLD,C=AU" "GET /news HTTP/1.1" 200 0.198 1024/2048/2048 "https://www.ato.gov.au/" "Mozilla/5.0 (Linux; Android 11)" ato.gov.au/443 ""
-202.124.241.178 202.124.241.178/50123 - [2025-07-12T10:15:12+10:00] - "-" "DELETE /api/item/123 HTTP/1.1" 204 0.178 128/256/256 "https://www.abc.net.au/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" abc.net.au/443 "?delete=123"
-128.250.1.21 128.250.1.21/55000 - [2025-07-12T10:15:15+10:00] - "CN=Evan Wright,OU=Users,O=Example Corp,L=Adelaide,ST=SA,C=AU" "PUT /profile HTTP/1.1" 200 0.201 768/1536/1536 "https://www.unimelb.edu.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" unimelb.edu.au/443 "?update=1"
-149.171.124.3 149.171.124.3/60123 - [2025-07-12T10:15:18+10:00] - "-" "GET /status HTTP/1.1" 200 0.045 64/128/128 "-" "curl/7.80.0" unsw.edu.au/443 ""
-54.230.110.108 54.230.110.108/41001 - [2025-07-12T10:15:21+10:00] - "CN=George Hall,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "PATCH /api/patch HTTP/1.1" 200 0.134 512/1024/1024 "https://www.sbs.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" sbs.com.au/443 "?patch=7"
-202.7.247.33 202.7.247.33/53000 - [2025-07-12T10:15:24+10:00] - "-" "GET /info HTTP/1.1" 200 0.065 128/256/256 "https://www.aph.gov.au/" "Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X)" aph.gov.au/443 ""
-203.50.2.71 203.50.2.71/41234 - [2025-07-12T10:15:28+10:00] - "CN=Ian O'Neil,OU=Users,O=Example Corp,L=GoldCoast,ST=QLD,C=AU" "HEAD /api/ping HTTP/1.1" 200 0.011 32/64/64 "-" "curl/7.68.0" telstra.com.au/443 ""
-203.24.100.1 203.24.100.1/60002 - [2025-07-12T10:15:32+10:00] - "-" "OPTIONS /api/options HTTP/1.1" 200 0.008 16/32/32 "-" "Mozilla/5.0 (Linux; Android 12)" geelongadvertiser.com.au/443 ""
-203.55.21.1 203.55.21.1/49153 - [2025-07-12T10:15:35+10:00] - "CN=Kevin Tran,OU=Users,O=Example Corp,L=Geelong,ST=VIC,C=AU" "GET /help HTTP/1.1" 404 0.052 0/0/0 "https://www.thechronicle.com.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" thechronicle.com.au/443 "?help"
-202.86.144.66 202.86.144.66/53215 - [2025-07-12T10:15:39+10:00] - "-" "GET /user HTTP/1.1" 200 0.076 256/512/512 "https://www.illawarramercury.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" illawarramercury.com.au/443 "?user=Linda"
-203.2.218.214 203.2.218.214/54322 - [2025-07-12T10:15:42+10:00] - "CN=Matt Lee,OU=Users,O=Example Corp,L=Ballarat,ST=VIC,C=AU" "GET /api/ballarat HTTP/1.1" 200 0.088 300/600/600 "https://www.abc.net.au/" "Mozilla/5.0 (Linux; Android 10)" abc.net.au/443 "?city=ballarat"
-203.62.3.1 203.62.3.1/49202 - [2025-07-12T10:15:45+10:00] - "-" "POST /api/login HTTP/1.1" 401 0.210 0/0/0 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?login=fail"
-1.0.0.1 1.0.0.1/40002 - [2025-07-12T10:15:48+10:00] - "CN=Olga Ivanova,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "GET /api/darwin HTTP/1.1" 200 0.099 256/512/512 "https://cloudflare.com/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" cloudflare.com/443 "?city=darwin"
-203.50.2.72 203.50.2.72/50124 - [2025-07-12T10:15:51+10:00] - "-" "GET /api/canberra HTTP/1.1" 200 0.134 512/1024/1024 "https://www.telstra.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" telstra.com.au/443 "?city=canberra"
-203.62.4.1 203.62.4.1/49203 - [2025-07-12T10:15:54+10:00] - "CN=Quinn Taylor,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "POST /api/post HTTP/1.1" 201 0.256 1024/2048/2048 "https://www.education.act.gov.au/" "curl/7.68.0" education.act.gov.au/443 "?post=true"
-203.62.8.1 203.62.8.1/49154 - [2025-07-12T10:15:58+10:00] - "-" "GET /api/melbourne HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?city=melbourne"
-203.62.64.2 203.62.64.2/53216 - [2025-07-12T10:16:01+10:00] - "CN=Sam Wong,OU=Users,O=Example Corp,L=Perth,ST=WA,C=AU" "GET /api/perth HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" education.act.gov.au/443 "?city=perth"
-203.50.2.73 203.50.2.73/54323 - [2025-07-12T10:16:04+10:00] - "-" "GET /api/hobart HTTP/1.1" 200 0.088 300/600/600 "https://www.telstra.com.au/" "Mozilla/5.0 (Linux; Android 10)" telstra.com.au/443 "?city=hobart"
+8.8.8.8 8.8.8.8/53125 - [2025-07-16T10:01:15+00:00] - "/C=US/ST=CA/CN=client1.example.com" "GET /index.html HTTP/1.1" 200 0.123 512/1024/512 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" example.com/443 "/index.html"
+192.0.2.43 192.0.2.43/42022 - [2025-07-16T10:01:45+00:00] - "" "POST /api/data HTTP/1.1" 201 0.308 951/2048/2041 "https://example.com/form" "curl/7.85.0" api.example.net/443 "/api/data"
+198.51.100.17 198.51.100.17/41234 - [2025-07-16T10:02:07+00:00] - "/C=US/CN=unknown" "GET /image.png HTTP/1.1" 304 0.056 211/0/0 "https://img.example.com" "Mozilla/5.0 (X11; Linux x86_64)" cdn.example.org/443 "/image.png"
+172.16.0.24 172.16.0.24/53782 - [2025-07-16T10:02:31+00:00] - "" "GET /private/dashboard HTTP/1.1" 403 0.201 1435/2500/1500 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" dashboard.local/443 "/private/dashboard"
+45.33.32.156 45.33.32.156/61612 - [2025-07-16T10:03:01+00:00] - "/C=DE/L=Berlin/CN=user.de" "GET /shop HTTP/1.1" 200 0.099 650/800/800 "https://referer.example" "Mozilla/5.0 (Android 12; Mobile)" shop.example.com/443 "/shop"
+10.0.0.5 10.0.0.5/61001 - [2025-07-16T10:03:27+00:00] - "" "GET /internal/ping HTTP/1.1" 200 0.005 60/100/100 "-" "curl/8.1.2" internal.example.local/443 "/internal/ping"
+203.0.113.7 203.0.113.7/50211 - [2025-07-16T10:04:03+00:00] - "/C=CA/CN=cdn.ca" "GET /asset.js HTTP/1.1" 200 0.087 340/512/512 "https://example.ca" "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X)" cdn.ca.net/443 "/asset.js"
+2606:4700:4700::1111 2606:4700:4700::1111/55443 - [2025-07-16T10:04:41+00:00] - "" "GET /dns-query HTTP/2" 200 0.074 128/280/280 "-" "DoH Client/1.3" cloudflare-dns.com/443 "/dns-query"
+93.184.216.34 93.184.216.34/61423 - [2025-07-16T10:05:19+00:00] - "/C=US/CN=example.com" "GET /about HTTP/1.1" 200 0.113 412/600/600 "https://example.com" "Mozilla/5.0 (Windows NT 11.0)" site.example.com/443 "/about"
+fd00::abcd fd00::abcd/51515 - [2025-07-16T10:05:57+00:00] - "" "GET /metrics HTTP/1.1" 200 0.032 123/256/256 "-" "Prometheus/2.42.1" metrics.internal/443 "/metrics"
 ```
 
 So we now execute with debug and test mode, so we don't post the file to the configured stroom proxy (as we want to see the effect
@@ -466,53 +456,51 @@ of resolving ip addresses)
 
 ```
 # ./stroom_log_collector.py --config stroom_log_collector_nginx.yml --state-dir nstate --queue-dir nqueue --debug --test
-2025-07-13T17:06:24.887+1000 INFO Log Collector started with config: nginx_samples.yml, state_dir: ns, queue_dir: nq
-2025-07-13T17:06:24.908+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 0 succeeded, 0 failed.
-2025-07-13T17:06:24.909+1000 INFO Processing log files in order: ./nginx_samples.log
-2025-07-13T17:06:24.910+1000 DEBUG Processing ./nginx_samples.log
-2025-07-13T17:06:24.934+1000 DEBUG socket.gethostbyaddr('139.130.205.54') failed: [Errno 1] Unknown host
-2025-07-13T17:06:24.937+1000 DEBUG socket.gethostbyaddr('152.91.14.133') failed: [Errno 1] Unknown host
-2025-07-13T17:06:25.008+1000 DEBUG socket.gethostbyaddr('128.250.1.21') failed: [Errno 1] Unknown host
-2025-07-13T17:06:30.014+1000 DEBUG socket.gethostbyaddr('149.171.124.3') failed: [Errno 2] Host name lookup failure
-2025-07-13T17:06:40.030+1000 DEBUG socket.gethostbyaddr('202.7.247.33') failed: [Errno 2] Host name lookup failure
-2025-07-13T17:06:40.313+1000 DEBUG socket.gethostbyaddr('203.2.218.214') failed: [Errno 1] Unknown hostv7stroom-proxy.somedomain.org
-2025-07-13T17:06:40.404+1000 DEBUG socket.gethostbyaddr('203.62.3.1') failed: [Errno 1] Unknown host
-2025-07-13T17:06:40.479+1000 DEBUG socket.gethostbyaddr('203.62.4.1') failed: [Errno 1] Unknown host
-2025-07-13T17:06:40.481+1000 DEBUG socket.gethostbyaddr('203.62.8.1') failed: [Errno 1] Unknown host
-2025-07-13T17:06:40.532+1000 DEBUG socket.gethostbyaddr('203.62.64.2') failed: [Errno 1] Unknown host
-2025-07-13T17:06:40.536+1000 INFO Queued new file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz for feed NginxAccess-BlackBox-V1.0-EVENTS
-2025-07-13T17:06:40.537+1000 INFO [TEST MODE] Would post file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz to proxies: ['https://v7stroom-proxy.somedomain.org/stroom/datafeed']
-2025-07-13T17:06:40.538+1000 INFO Successfully posted and removed file: nq/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz
-2025-07-13T17:06:40.538+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 1 succeeded, 0 failed.
-2025-07-13T17:06:40.539+1000 INFO Age-out summary: 0 files deleted for age, 0 files deleted for size, 1 files remain.
-2025-07-13T17:06:40.539+1000 INFO Log Collector finished.
+2025-07-16T19:35:34.087+1000 INFO Log Collector started with config: nginx_samples.yml, state_dir: ns, queue_dir: nq
+2025-07-16T19:35:34.109+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 0 succeeded, 0 failed.
+2025-07-16T19:35:34.111+1000 INFO Processing log files in order: ./nginx_samples.log
+2025-07-16T19:35:34.111+1000 DEBUG Processing ./nginx_samples.log
+2025-07-16T19:35:34.344+1000 DEBUG socket.gethostbyaddr('192.0.2.43') failed: [Errno 1] Unknown host
+2025-07-16T19:35:34.347+1000 DEBUG socket.gethostbyaddr('198.51.100.17') failed: [Errno 1] Unknown host
+2025-07-16T19:35:34.350+1000 DEBUG socket.gethostbyaddr('172.16.0.24') failed: [Errno 1] Unknown host
+2025-07-16T19:35:34.673+1000 DEBUG socket.gethostbyaddr('10.0.0.5') failed: [Errno 1] Unknown host
+2025-07-16T19:35:34.677+1000 DEBUG socket.gethostbyaddr('203.0.113.7') failed: [Errno 1] Unknown host
+2025-07-16T19:35:35.579+1000 DEBUG socket.gethostbyaddr('93.184.216.34') failed: [Errno 1] Unknown host
+2025-07-16T19:35:35.584+1000 DEBUG socket.gethostbyaddr('fd00::abcd') failed: [Errno 1] Unknown host
+2025-07-16T19:35:35.586+1000 INFO Queued new file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz for feed NginxAccess-BlackBox-V1.0-EVENTS
+2025-07-16T19:35:35.587+1000 INFO [TEST MODE] Would post file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz to proxies: ['https://v7stroom-proxy.somedomain.org/stroom/datafeed']
+2025-07-16T19:35:35.587+1000 INFO Successfully posted and removed file: nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz
+2025-07-16T19:35:35.588+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 1 succeeded, 0 failed.
+2025-07-16T19:35:35.589+1000 INFO Age-out summary: 0 files deleted for age, 0 files deleted for size, 1 files remain.
+2025-07-16T19:35:35.589+1000 INFO Log Collector finished.
 # 
 ```
 
 And if we look at the queued file, we see some of the ip addresses identifed and, if possible, resolved
 
 ```
-# gunzip -c nq/NginxAccess-BlackBox-V1.0-EVENTS_20250712_101604+1000.log.gz
-1.1.1.1 1.1.1.1/54321 - [2025-07-12T10:15:01+10:00] - "CN=Alice Smith,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "GET / HTTP/1.1" 200 0.123 512/1024/1024 "https://cloudflare.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" cloudflare.com/443 "/" _resolv_: 1.1.1.1=one.one.one.one
-139.130.205.54 139.130.205.54/49201 - [2025-07-12T10:15:05+10:00] - "-" "POST /login HTTP/1.1" 302 0.234 256/512/512 "https://www.infrastructure.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" infrastructure.gov.au/443 "?redirect=home" _resolv_: 139.130.205.54=-
-152.91.14.133 152.91.14.133/40001 - [2025-07-12T10:15:09+10:00] - "CN=Charlie Brown,OU=Users,O=Example Corp,L=Brisbane,ST=QLD,C=AU" "GET /news HTTP/1.1" 200 0.198 1024/2048/2048 "https://www.ato.gov.au/" "Mozilla/5.0 (Linux; Android 11)" ato.gov.au/443 "" _resolv_: 152.91.14.133=-
-202.124.241.178 202.124.241.178/50123 - [2025-07-12T10:15:12+10:00] - "-" "DELETE /api/item/123 HTTP/1.1" 204 0.178 128/256/256 "https://www.abc.net.au/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" abc.net.au/443 "?delete=123" _resolv_: 202.124.241.178=redirector.servers.netregistry.net
-128.250.1.21 128.250.1.21/55000 - [2025-07-12T10:15:15+10:00] - "CN=Evan Wright,OU=Users,O=Example Corp,L=Adelaide,ST=SA,C=AU" "PUT /profile HTTP/1.1" 200 0.201 768/1536/1536 "https://www.unimelb.edu.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" unimelb.edu.au/443 "?update=1" _resolv_: 128.250.1.21=-
-149.171.124.3 149.171.124.3/60123 - [2025-07-12T10:15:18+10:00] - "-" "GET /status HTTP/1.1" 200 0.045 64/128/128 "-" "curl/7.80.0" unsw.edu.au/443 "" _resolv_: 149.171.124.3=-
-54.230.110.108 54.230.110.108/41001 - [2025-07-12T10:15:21+10:00] - "CN=George Hall,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "PATCH /api/patch HTTP/1.1" 200 0.134 512/1024/1024 "https://www.sbs.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" sbs.com.au/443 "?patch=7" _resolv_: 54.230.110.108=server-54-230-110-108.osl50.r.cloudfront.net
-202.7.247.33 202.7.247.33/53000 - [2025-07-12T10:15:24+10:00] - "-" "GET /info HTTP/1.1" 200 0.065 128/256/256 "https://www.aph.gov.au/" "Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X)" aph.gov.au/443 "" _resolv_: 202.7.247.33=-
-203.50.2.71 203.50.2.71/41234 - [2025-07-12T10:15:28+10:00] - "CN=Ian O'Neil,OU=Users,O=Example Corp,L=GoldCoast,ST=QLD,C=AU" "HEAD /api/ping HTTP/1.1" 200 0.011 32/64/64 "-" "curl/7.68.0" telstra.com.au/443 "" _resolv_: 203.50.2.71=lon-resolver.telstra.net
-203.24.100.1 203.24.100.1/60002 - [2025-07-12T10:15:32+10:00] - "-" "OPTIONS /api/options HTTP/1.1" 200 0.008 16/32/32 "-" "Mozilla/5.0 (Linux; Android 12)" geelongadvertiser.com.au/443 "" _resolv_: 203.24.100.1=ge0-3-505.core0.per01.eftel.com
-203.55.21.1 203.55.21.1/49153 - [2025-07-12T10:15:35+10:00] - "CN=Kevin Tran,OU=Users,O=Example Corp,L=Geelong,ST=VIC,C=AU" "GET /help HTTP/1.1" 404 0.052 0/0/0 "https://www.thechronicle.com.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" thechronicle.com.au/443 "?help" _resolv_: 203.55.21.1=mx1.a.outbound.createsend.com
-202.86.144.66 202.86.144.66/53215 - [2025-07-12T10:15:39+10:00] - "-" "GET /user HTTP/1.1" 200 0.076 256/512/512 "https://www.illawarramercury.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" illawarramercury.com.au/443 "?user=Linda" _resolv_: 202.86.144.66=n20286z144l66.static.ctmip.net
-203.2.218.214 203.2.218.214/54322 - [2025-07-12T10:15:42+10:00] - "CN=Matt Lee,OU=Users,O=Example Corp,L=Ballarat,ST=VIC,C=AU" "GET /api/ballarat HTTP/1.1" 200 0.088 300/600/600 "https://www.abc.net.au/" "Mozilla/5.0 (Linux; Android 10)" abc.net.au/443 "?city=ballarat" _resolv_: 203.2.218.214=-
-203.62.3.1 203.62.3.1/49202 - [2025-07-12T10:15:45+10:00] - "-" "POST /api/login HTTP/1.1" 401 0.210 0/0/0 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?login=fail" _resolv_: 203.62.3.1=-
-1.0.0.1 1.0.0.1/40002 - [2025-07-12T10:15:48+10:00] - "CN=Olga Ivanova,OU=Users,O=Example Corp,L=Darwin,ST=NT,C=AU" "GET /api/darwin HTTP/1.1" 200 0.099 256/512/512 "https://cloudflare.com/" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)" cloudflare.com/443 "?city=darwin" _resolv_: 1.0.0.1=one.one.one.one
-203.50.2.72 203.50.2.72/50124 - [2025-07-12T10:15:51+10:00] - "-" "GET /api/canberra HTTP/1.1" 200 0.134 512/1024/1024 "https://www.telstra.com.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" telstra.com.au/443 "?city=canberra" _resolv_: 203.50.2.72=lnip-resolver1.telstra.net
-203.62.4.1 203.62.4.1/49203 - [2025-07-12T10:15:54+10:00] - "CN=Quinn Taylor,OU=Users,O=Example Corp,L=Sydney,ST=NSW,C=AU" "POST /api/post HTTP/1.1" 201 0.256 1024/2048/2048 "https://www.education.act.gov.au/" "curl/7.68.0" education.act.gov.au/443 "?post=true" _resolv_: 203.62.4.1=-
-203.62.8.1 203.62.8.1/49154 - [2025-07-12T10:15:58+10:00] - "-" "GET /api/melbourne HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" education.act.gov.au/443 "?city=melbourne" _resolv_: 203.62.8.1=-
-203.62.64.2 203.62.64.2/53216 - [2025-07-12T10:16:01+10:00] - "CN=Sam Wong,OU=Users,O=Example Corp,L=Perth,ST=WA,C=AU" "GET /api/perth HTTP/1.1" 200 0.076 256/512/512 "https://www.education.act.gov.au/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" education.act.gov.au/443 "?city=perth" _resolv_: 203.62.64.2=-
-203.50.2.73 203.50.2.73/54323 - [2025-07-12T10:16:04+10:00] - "-" "GET /api/hobart HTTP/1.1" 200 0.088 300/600/600 "https://www.telstra.com.au/" "Mozilla/5.0 (Linux; Android 10)" telstra.com.au/443 "?city=hobart" _resolv_: 203.50.2.73=sdns2.telstra.net
+# gunzip -c nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz
+8.8.8.8 8.8.8.8/53125 - [2025-07-16T10:01:15+00:00] - "/C=US/ST=CA/CN=client1.example.com" "GET /index.html HTTP/1.1" 200 0.123 512/1024/512 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" example.com/443 "/index.html" _resolv_: 8.8.8.8=dns.google
+192.0.2.43 192.0.2.43/42022 - [2025-07-16T10:01:45+00:00] - "" "POST /api/data HTTP/1.1" 201 0.308 951/2048/2041 "https://example.com/form" "curl/7.85.0" api.example.net/443 "/api/data" _resolv_: 192.0.2.43=-
+198.51.100.17 198.51.100.17/41234 - [2025-07-16T10:02:07+00:00] - "/C=US/CN=unknown" "GET /image.png HTTP/1.1" 304 0.056 211/0/0 "https://img.example.com" "Mozilla/5.0 (X11; Linux x86_64)" cdn.example.org/443 "/image.png" _resolv_: 198.51.100.17=-
+172.16.0.24 172.16.0.24/53782 - [2025-07-16T10:02:31+00:00] - "" "GET /private/dashboard HTTP/1.1" 403 0.201 1435/2500/1500 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" dashboard.local/443 "/private/dashboard" _resolv_: 172.16.0.24=-
+45.33.32.156 45.33.32.156/61612 - [2025-07-16T10:03:01+00:00] - "/C=DE/L=Berlin/CN=user.de" "GET /shop HTTP/1.1" 200 0.099 650/800/800 "https://referer.example" "Mozilla/5.0 (Android 12; Mobile)" shop.example.com/443 "/shop" _resolv_: 45.33.32.156=scanme.nmap.org
+10.0.0.5 10.0.0.5/61001 - [2025-07-16T10:03:27+00:00] - "" "GET /internal/ping HTTP/1.1" 200 0.005 60/100/100 "-" "curl/8.1.2" internal.example.local/443 "/internal/ping" _resolv_: 10.0.0.5=-
+203.0.113.7 203.0.113.7/50211 - [2025-07-16T10:04:03+00:00] - "/C=CA/CN=cdn.ca" "GET /asset.js HTTP/1.1" 200 0.087 340/512/512 "https://example.ca" "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X)" cdn.ca.net/443 "/asset.js" _resolv_: 203.0.113.7=-
+2606:4700:4700::1111 2606:4700:4700::1111/55443 - [2025-07-16T10:04:41+00:00] - "" "GET /dns-query HTTP/2" 200 0.074 128/280/280 "-" "DoH Client/1.3" cloudflare-dns.com/443 "/dns-query" _resolv_: 2606:4700:4700::1111=one.one.one.one
+93.184.216.34 93.184.216.34/61423 - [2025-07-16T10:05:19+00:00] - "/C=US/CN=example.com" "GET /about HTTP/1.1" 200 0.113 412/600/600 "https://example.com" "Mozilla/5.0 (Windows NT 11.0)" site.example.com/443 "/about" _resolv_: 93.184.216.34=-
+fd00::abcd fd00::abcd/51515 - [2025-07-16T10:05:57+00:00] - "" "GET /metrics HTTP/1.1" 200 0.032 123/256/256 "-" "Prometheus/2.42.1" metrics.internal/443 "/metrics" _resolv_: fd00::abcd=-
+[root@swtf Network]# cat nginx_samples.log
+8.8.8.8 8.8.8.8/53125 - [2025-07-16T10:01:15+00:00] - "/C=US/ST=CA/CN=client1.example.com" "GET /index.html HTTP/1.1" 200 0.123 512/1024/512 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" example.com/443 "/index.html"
+192.0.2.43 192.0.2.43/42022 - [2025-07-16T10:01:45+00:00] - "" "POST /api/data HTTP/1.1" 201 0.308 951/2048/2041 "https://example.com/form" "curl/7.85.0" api.example.net/443 "/api/data"
+198.51.100.17 198.51.100.17/41234 - [2025-07-16T10:02:07+00:00] - "/C=US/CN=unknown" "GET /image.png HTTP/1.1" 304 0.056 211/0/0 "https://img.example.com" "Mozilla/5.0 (X11; Linux x86_64)" cdn.example.org/443 "/image.png"
+172.16.0.24 172.16.0.24/53782 - [2025-07-16T10:02:31+00:00] - "" "GET /private/dashboard HTTP/1.1" 403 0.201 1435/2500/1500 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" dashboard.local/443 "/private/dashboard"
+45.33.32.156 45.33.32.156/61612 - [2025-07-16T10:03:01+00:00] - "/C=DE/L=Berlin/CN=user.de" "GET /shop HTTP/1.1" 200 0.099 650/800/800 "https://referer.example" "Mozilla/5.0 (Android 12; Mobile)" shop.example.com/443 "/shop"
+10.0.0.5 10.0.0.5/61001 - [2025-07-16T10:03:27+00:00] - "" "GET /internal/ping HTTP/1.1" 200 0.005 60/100/100 "-" "curl/8.1.2" internal.example.local/443 "/internal/ping"
+203.0.113.7 203.0.113.7/50211 - [2025-07-16T10:04:03+00:00] - "/C=CA/CN=cdn.ca" "GET /asset.js HTTP/1.1" 200 0.087 340/512/512 "https://example.ca" "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X)" cdn.ca.net/443 "/asset.js"
+2606:4700:4700::1111 2606:4700:4700::1111/55443 - [2025-07-16T10:04:41+00:00] - "" "GET /dns-query HTTP/2" 200 0.074 128/280/280 "-" "DoH Client/1.3" cloudflare-dns.com/443 "/dns-query"
+93.184.216.34 93.184.216.34/61423 - [2025-07-16T10:05:19+00:00] - "/C=US/CN=example.com" "GET /about HTTP/1.1" 200 0.113 412/600/600 "https://example.com" "Mozilla/5.0 (Windows NT 11.0)" site.example.com/443 "/about"
+fd00::abcd fd00::abcd/51515 - [2025-07-16T10:05:57+00:00] - "" "GET /metrics HTTP/1.1" 200 0.032 123/256/256 "-" "Prometheus/2.42.1" metrics.internal/443 "/metrics"
 # 
 ```
 
