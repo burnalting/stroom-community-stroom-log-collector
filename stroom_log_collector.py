@@ -573,6 +573,87 @@ def open_logfile(filename: str, mode: str = 'rt', encoding: str = 'utf-8'):
         logging.warning("Skipped file %s: cannot be opened as text file. Reason: %s", filename, e)
         return None
 
+def get_local_timezone_name() -> str:
+    """
+    Determine the system's IANA timezone name as a string.
+    
+    Returns:
+        str: The IANA timezone name (e.g., 'Australia/Sydney').
+    
+    Raises:
+        ImportError: If neither 'zoneinfo' nor 'tzlocal' are available.
+    
+    Notes:
+        - On Python 3.9+, attempts to use the standard library 'zoneinfo'.
+        - If unavailable, tries to use the 'tzlocal' package (install via 'pip install tzlocal').
+        - Checks common Unix-specific mechanisms for timezone discovery.
+        - Designed for portability on RHEL7 and all newer major Linux distributions.
+    """
+    # Prefer TZ environment variable if present
+    tz_env = os.environ.get('TZ')
+    if tz_env:
+        return tz_env
+
+    # 1. Try Python 3.9+'s zoneinfo
+    try:
+        try:
+            import zoneinfo
+            local_tz = datetime.datetime.now().astimezone().tzinfo
+            if hasattr(local_tz, 'key'):
+                return local_tz.key
+        except ImportError:
+            pass  # zoneinfo not available, continue to next
+    except Exception as e:
+        logging.debug("zoneinfo import or usage failed: %s", e)
+
+    # 2. Try tzlocal if available (works on Python 2.7+ and new)
+    try:
+        try:
+            import tzlocal
+            try:
+                # tzlocal >= 3.0
+                return tzlocal.get_localzone_name()
+            except AttributeError:
+                # tzlocal < 3.0
+                return str(tzlocal.get_localzone())
+        except ImportError:
+            pass  # tzlocal not available, continue to next
+    except Exception as e:
+        logging.debug("tzlocal usage failed: %s", e)
+
+    # 3. Try parsing /etc/localtime symlink (common on RHEL7+)
+    zoneinfo_dir = "/usr/share/zoneinfo/"
+    localtime_path = "/etc/localtime"
+    try:
+        if os.path.islink(localtime_path):
+            real_path = os.path.realpath(localtime_path)
+            if real_path.startswith(zoneinfo_dir):
+                tzname = real_path[len(zoneinfo_dir):]
+                if tzname:
+                    return tzname
+        elif os.path.exists(localtime_path):
+            # If localtime is not a symlink (copied file), do a binary compare with zoneinfo
+            try:
+                import filecmp
+            except ImportError:
+                filecmp = None
+            if filecmp is not None:
+                for root, dirs, files in os.walk(zoneinfo_dir):
+                    for fname in files:
+                        candidate = os.path.join(root, fname)
+                        try:
+                            if filecmp.cmp(localtime_path, candidate, shallow=False):
+                                tzname = candidate[len(zoneinfo_dir):]
+                                if tzname:
+                                    return tzname
+                        except Exception:
+                            continue
+    except Exception as e:
+        logging.debug("Parsing /etc/localtime failed: %s", e)
+
+    # 4. Fallback: UTC
+    return "UTC"
+
 
 def get_verify_from_tls_opts(tls_opts: dict):
     """
@@ -624,6 +705,8 @@ def post_file_with_retry(
     """
     if test_mode:
         logging.info("[TEST MODE] Would post file %s to proxies: %s", file_path, proxies)
+        header_str = "; ".join(f"{k}: {v}" for k, v in headers.items())
+        logging.info("[TEST MODE] with headers %s", header_str)
         return True
 
     verify = get_verify_from_tls_opts(tls_opts)
@@ -962,6 +1045,7 @@ def main() -> None:
         headers.update(host_headers)
         headers['Feed'] = feed_name
         headers['Compression'] = 'GZIP'
+        headers['TZ'] = get_local_timezone_name()
         timeout = feed.get('timeout_seconds', config.get('timeout_seconds', 10))
         post_queued_files(feed, args.queue_dir, proxies, headers, tls_opts, timeout, test_mode=args.test)
         out_file = process_log_files(feed, args.state_dir, state, args.queue_dir, host_headers)

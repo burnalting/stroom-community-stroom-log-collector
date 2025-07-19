@@ -17,7 +17,7 @@ This Python script collects new log lines from rotated log files, enriches them 
 - **Log rotation support:** Handles files with patterns like `base`, `base.timestamp`, etc.
 - **ISO8601 timestamp extraction:** Defaults to ISO8601 with/without timezone, with robust fractional second support.
 - **IPv4/IPv6/FQDN enrichment:** Appends FQDNs for all detected IPs in log lines.
-- **Comprehensive host metadata:** Adds all host IPs, FQDNs, and nameservers to HTTP headers when file posting.
+- **Comprehensive host metadata:** Adds all host IPs, FQDNs, nameservers, and system Timezone to HTTP headers when file posting.
 - **Mutual TLS support:** Can use client cert/key and CA bundle for two-sided trust. Or no trust at all (not recommended)
 - **Queue-first posting:** Always attempts to post any queued files, even if no new logs are found.
 - **File aging:** Queued files are deleted if they exceed a time or size limit.
@@ -198,6 +198,7 @@ The script adds the following headers to every post:
  - `MyIPAddresses`: All host IPs (IPv4 and IPv6, all interfaces)
  - `MyHosts`: All FQDNs for the host
  - `MyNameServer`: All nameservers discovered by multiple mechanisms
+ - `TZ`: System Ianna Timezone
  - Plus any custom headers from the feed config
 
 - **IP/FQDN Enrichment:**  
@@ -384,8 +385,7 @@ But if we wait, we see
 
 ## Example 2
 
-In this example, we want to monitor an [Nginx](https://nginx.org) access log that has been configured to use the Nginx blackboxSSLUser logging format. This format
-is configured as per
+In this example, we want to monitor an [Nginx](https://nginx.org) system's access and error log where the access log has been configured to use the Nginx blackboxSSLUser logging format. This format is configured as per
 
 ```
 log_format blackboxSSLUser
@@ -413,7 +413,7 @@ timeout_seconds: 10
 
 # List of log sources ("feeds") to monitor and post
 feeds:
-  - name: StroomNginx                                   # Unique identifier for this feed (used in state file)
+  - name: StroomNginx-Access                            # Unique identifier for this feed (used in state file)
     log_pattern: /var/log/nginx/blackbox_ssl_user.log*  # Glob pattern for log files (rotated and base)
     feed_name: NginxAccess-BlackBox-V1.0-EVENTS         # Stroom feed name to use in HTTP header
     headers:                             # (Optional) Additional HTTP headers for this feed
@@ -428,6 +428,19 @@ feeds:
     queue_time_limit_days: 7             # (Optional) Max age (days) for queued files for this feed
     queue_size_limit_mb: 500             # (Optional) Max queue size (MB) for this feed
     timeout_seconds: 20                  # (Optional) Override global timeout for this feed
+
+  - name: StroomNginx-Error              # Unique identifier for this feed (used in state file)
+    log_pattern: /var/log/nginx/error.log*  # Glob pattern for log files (rotated and base)
+    feed_name: NginxError-Standard-V1.0-EVENTS         # Stroom feed name to use in HTTP header
+    headers:                             # (Optional) Additional HTTP headers for this feed
+      Environment: Production
+      LogType: Nginx Error log for capabilty XXX
+    custom_formats:                      # (Optional) List of custom timestamp regex/format pairs
+      - regex: '(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})'
+        format: '%Y/%m/%d %H:%M:%S' # For 2025/07/16 10:03:39
+    enrich_ip: true                      # (Optional) If true, append FQDNs for all IPs in each line
+    queue_time_limit_days: 7             # (Optional) Max age (days) for queued files for this feed
+    queue_size_limit_mb: 500             # (Optional) Max queue size (MB) for this feed
 
 # Default retention/queue settings (used if not overridden per-feed)
 defaults:
@@ -450,33 +463,64 @@ We will use some sample Nginx access logs generated from the internet
 fd00::abcd fd00::abcd/51515 - [2025-07-16T10:05:57+00:00] - "" "GET /metrics HTTP/1.1" 200 0.032 123/256/256 "-" "Prometheus/2.42.1" metrics.internal/443 "/metrics"
 ```
 
+And error log of
+
+```
+2025/07/16 10:01:42 [error] 1234#0: *101 SSL_do_handshake() failed (SSL: error:14094410:SSL routines:ssl3_read_bytes:sslv3 alert handshake failure) while SSL handshaking, client: 192.0.2.43, server: 0.0.0.0:443
+2025/07/16 10:02:01 [warn] 1234#0: *102 no If-Modified-Since header in conditional GET request for /static/img/logo.png, client: 198.51.100.17, server: cdn.example.org
+2025/07/16 10:02:24 [error] 1234#0: *103 open() "/var/www/html/robots.txt" failed (2: No such file or directory), client: 203.0.113.7, server: site.example.com
+2025/07/16 10:03:18 [notice] 1234#0: signal process started
+2025/07/16 10:03:39 [error] 1234#0: *104 connect() failed (111: Connection refused) while connecting to upstream, client: 172.16.0.24, server: api.example.net, request: "GET /api/status HTTP/1.1", upstream: "http://127.0.0.1:8081/status"
+2025/07/16 10:04:02 [crit] 1234#0: *105 SSL_write() failed (SSL: syscall failure: Broken pipe) while sending to client, client: 10.0.0.5, server: internal.example.local
+2025/07/16 10:04:26 [error] 1234#0: *106 invalid host in upstream "http://:8080", client: 45.33.32.156, server: example.com, request: "GET /services HTTP/1.1"
+2025/07/16 10:04:59 [warn] 1234#0: *107 using uninitialized variable "$custom_var" while logging request, client: 93.184.216.34, server: shop.example.com
+2025/07/16 10:05:13 [error] 1234#0: *108 client intended to send too large body: 10485760 bytes, client: 2606:4700:4700::1111, server: cdn.ca.net, request: "POST /upload HTTP/1.1"
+```
+
 So we now execute with debug and test mode, so we don't post the file to the configured stroom proxy (as we want to see the effect
 of resolving ip addresses)
 
 
 ```
 # ./stroom_log_collector.py --config stroom_log_collector_nginx.yml --state-dir nstate --queue-dir nqueue --debug --test
-2025-07-16T19:35:34.087+1000 INFO Log Collector started with config: nginx_samples.yml, state_dir: ns, queue_dir: nq
-2025-07-16T19:35:34.109+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 0 succeeded, 0 failed.
-2025-07-16T19:35:34.111+1000 INFO Processing log files in order: ./nginx_samples.log
-2025-07-16T19:35:34.111+1000 DEBUG Processing ./nginx_samples.log
-2025-07-16T19:35:34.344+1000 DEBUG socket.gethostbyaddr('192.0.2.43') failed: [Errno 1] Unknown host
-2025-07-16T19:35:34.347+1000 DEBUG socket.gethostbyaddr('198.51.100.17') failed: [Errno 1] Unknown host
-2025-07-16T19:35:34.350+1000 DEBUG socket.gethostbyaddr('172.16.0.24') failed: [Errno 1] Unknown host
-2025-07-16T19:35:34.673+1000 DEBUG socket.gethostbyaddr('10.0.0.5') failed: [Errno 1] Unknown host
-2025-07-16T19:35:34.677+1000 DEBUG socket.gethostbyaddr('203.0.113.7') failed: [Errno 1] Unknown host
-2025-07-16T19:35:35.579+1000 DEBUG socket.gethostbyaddr('93.184.216.34') failed: [Errno 1] Unknown host
-2025-07-16T19:35:35.584+1000 DEBUG socket.gethostbyaddr('fd00::abcd') failed: [Errno 1] Unknown host
-2025-07-16T19:35:35.586+1000 INFO Queued new file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz for feed NginxAccess-BlackBox-V1.0-EVENTS
-2025-07-16T19:35:35.587+1000 INFO [TEST MODE] Would post file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz to proxies: ['https://v7stroom-proxy.somedomain.org/stroom/datafeed']
-2025-07-16T19:35:35.587+1000 INFO Successfully posted and removed file: nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz
-2025-07-16T19:35:35.588+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 1 succeeded, 0 failed.
-2025-07-16T19:35:35.589+1000 INFO Age-out summary: 0 files deleted for age, 0 files deleted for size, 1 files remain.
-2025-07-16T19:35:35.589+1000 INFO Log Collector finished.
+2025-07-19T13:33:38.844+1000 INFO Log Collector started with config: nginx_samples.yml, state_dir: ns, queue_dir: nq
+2025-07-19T13:33:38.859+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 0 succeeded, 0 failed.
+2025-07-19T13:33:38.861+1000 INFO Processing log files in order: ./nginx_samples.log
+2025-07-19T13:33:38.861+1000 DEBUG Processing ./nginx_samples.log
+2025-07-19T13:33:38.972+1000 DEBUG socket.gethostbyaddr('192.0.2.43') failed: [Errno 1] Unknown host
+2025-07-19T13:33:38.976+1000 DEBUG socket.gethostbyaddr('198.51.100.17') failed: [Errno 1] Unknown host
+2025-07-19T13:33:38.979+1000 DEBUG socket.gethostbyaddr('172.16.0.24') failed: [Errno 1] Unknown host
+2025-07-19T13:33:39.870+1000 DEBUG socket.gethostbyaddr('10.0.0.5') failed: [Errno 1] Unknown host
+2025-07-19T13:33:39.875+1000 DEBUG socket.gethostbyaddr('203.0.113.7') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.776+1000 DEBUG socket.gethostbyaddr('93.184.216.34') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.781+1000 DEBUG socket.gethostbyaddr('fd00::abcd') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.784+1000 INFO Queued new file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz for feed NginxAccess-BlackBox-V1.0-EVENTS
+2025-07-19T13:33:40.784+1000 INFO [TEST MODE] Would post file nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz to proxies: ['https://v7stroom-proxy.somedomain.org/stroom/datafeed']
+2025-07-19T13:33:40.784+1000 INFO [TEST MODE] with headers Environment: Production; LogType: Nginx Access for capabilty XXX; MyIPAddresses: 192.168.1.107,192.168.122.1,fe80:0000:0000:0000:0a00:27ff:fe1a:b7a9; MyHosts: 192.168.1.107,192.168.122.1,fe80::a00:27ff:fe1a:b7a9,swtf.somedomain.org; MyNameServer: 192.168.1.1; Feed: NginxAccess-BlackBox-V1.0-EVENTS; Compression: GZIP; TZ: Australia/Sydney
+2025-07-19T13:33:40.784+1000 INFO Successfully posted and removed file: nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz
+2025-07-19T13:33:40.785+1000 INFO Post summary for feed 'NginxAccess-BlackBox-V1.0-EVENTS': 1 succeeded, 0 failed.
+2025-07-19T13:33:40.785+1000 INFO Age-out summary: 0 files deleted for age, 0 files deleted for size, 1 files remain.
+2025-07-19T13:33:40.786+1000 INFO Post summary for feed 'NginxError-Standard-V1.0-EVENTS': 0 succeeded, 0 failed.
+2025-07-19T13:33:40.788+1000 INFO Processing log files in order: ./nginx_samples_errlog.log
+2025-07-19T13:33:40.788+1000 DEBUG Processing ./nginx_samples_errlog.log
+2025-07-19T13:33:40.792+1000 DEBUG socket.gethostbyaddr('0.0.0.0') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.795+1000 DEBUG socket.gethostbyaddr('192.0.2.43') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.800+1000 DEBUG socket.gethostbyaddr('198.51.100.17') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.813+1000 DEBUG socket.gethostbyaddr('203.0.113.7') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.817+1000 DEBUG socket.gethostbyaddr('172.16.0.24') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.826+1000 DEBUG socket.gethostbyaddr('10.0.0.5') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.833+1000 DEBUG socket.gethostbyaddr('93.184.216.34') failed: [Errno 1] Unknown host
+2025-07-19T13:33:40.837+1000 INFO Queued new file nq/NginxError-Standard-V1.0-EVENTS_20250716_100600.log.gz for feed NginxError-Standard-V1.0-EVENTS
+2025-07-19T13:33:40.838+1000 INFO [TEST MODE] Would post file nq/NginxError-Standard-V1.0-EVENTS_20250716_100600.log.gz to proxies: ['https://v7stroom-proxy.somedomain.org/stroom/datafeed']
+2025-07-19T13:33:40.838+1000 INFO [TEST MODE] with headers Environment: Production; LogType: Nginx Error LOg for capabilty XXX; MyIPAddresses: 192.168.1.107,192.168.122.1,fe80:0000:0000:0000:0a00:27ff:fe1a:b7a9; MyHosts: 192.168.1.107,192.168.122.1,fe80::a00:27ff:fe1a:b7a9,swtf.somedomain.org; MyNameServer: 192.168.1.1; Feed: NginxError-Standard-V1.0-EVENTS; Compression: GZIP; TZ: Australia/Sydney
+2025-07-19T13:33:40.838+1000 INFO Successfully posted and removed file: nq/NginxError-Standard-V1.0-EVENTS_20250716_100600.log.gz
+2025-07-19T13:33:40.838+1000 INFO Post summary for feed 'NginxError-Standard-V1.0-EVENTS': 1 succeeded, 0 failed.
+2025-07-19T13:33:40.838+1000 INFO Age-out summary: 0 files deleted for age, 0 files deleted for size, 2 files remain.
+2025-07-19T13:33:40.838+1000 INFO Log Collector finished.
 # 
 ```
 
-And if we look at the queued file, we see some of the ip addresses identifed and, if possible, resolved
+And if we look at the queued files, we see some of the ip addresses identifed and, if possible, resolved
 
 ```
 # gunzip -c nq/NginxAccess-BlackBox-V1.0-EVENTS_20250716_100557+0000.log.gz
@@ -490,17 +534,21 @@ And if we look at the queued file, we see some of the ip addresses identifed and
 2606:4700:4700::1111 2606:4700:4700::1111/55443 - [2025-07-16T10:04:41+00:00] - "" "GET /dns-query HTTP/2" 200 0.074 128/280/280 "-" "DoH Client/1.3" cloudflare-dns.com/443 "/dns-query" _resolv_: 2606:4700:4700::1111=one.one.one.one
 93.184.216.34 93.184.216.34/61423 - [2025-07-16T10:05:19+00:00] - "/C=US/CN=example.com" "GET /about HTTP/1.1" 200 0.113 412/600/600 "https://example.com" "Mozilla/5.0 (Windows NT 11.0)" site.example.com/443 "/about" _resolv_: 93.184.216.34=-
 fd00::abcd fd00::abcd/51515 - [2025-07-16T10:05:57+00:00] - "" "GET /metrics HTTP/1.1" 200 0.032 123/256/256 "-" "Prometheus/2.42.1" metrics.internal/443 "/metrics" _resolv_: fd00::abcd=-
-[root@swtf Network]# cat nginx_samples.log
-8.8.8.8 8.8.8.8/53125 - [2025-07-16T10:01:15+00:00] - "/C=US/ST=CA/CN=client1.example.com" "GET /index.html HTTP/1.1" 200 0.123 512/1024/512 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" example.com/443 "/index.html"
-192.0.2.43 192.0.2.43/42022 - [2025-07-16T10:01:45+00:00] - "" "POST /api/data HTTP/1.1" 201 0.308 951/2048/2041 "https://example.com/form" "curl/7.85.0" api.example.net/443 "/api/data"
-198.51.100.17 198.51.100.17/41234 - [2025-07-16T10:02:07+00:00] - "/C=US/CN=unknown" "GET /image.png HTTP/1.1" 304 0.056 211/0/0 "https://img.example.com" "Mozilla/5.0 (X11; Linux x86_64)" cdn.example.org/443 "/image.png"
-172.16.0.24 172.16.0.24/53782 - [2025-07-16T10:02:31+00:00] - "" "GET /private/dashboard HTTP/1.1" 403 0.201 1435/2500/1500 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" dashboard.local/443 "/private/dashboard"
-45.33.32.156 45.33.32.156/61612 - [2025-07-16T10:03:01+00:00] - "/C=DE/L=Berlin/CN=user.de" "GET /shop HTTP/1.1" 200 0.099 650/800/800 "https://referer.example" "Mozilla/5.0 (Android 12; Mobile)" shop.example.com/443 "/shop"
-10.0.0.5 10.0.0.5/61001 - [2025-07-16T10:03:27+00:00] - "" "GET /internal/ping HTTP/1.1" 200 0.005 60/100/100 "-" "curl/8.1.2" internal.example.local/443 "/internal/ping"
-203.0.113.7 203.0.113.7/50211 - [2025-07-16T10:04:03+00:00] - "/C=CA/CN=cdn.ca" "GET /asset.js HTTP/1.1" 200 0.087 340/512/512 "https://example.ca" "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X)" cdn.ca.net/443 "/asset.js"
-2606:4700:4700::1111 2606:4700:4700::1111/55443 - [2025-07-16T10:04:41+00:00] - "" "GET /dns-query HTTP/2" 200 0.074 128/280/280 "-" "DoH Client/1.3" cloudflare-dns.com/443 "/dns-query"
-93.184.216.34 93.184.216.34/61423 - [2025-07-16T10:05:19+00:00] - "/C=US/CN=example.com" "GET /about HTTP/1.1" 200 0.113 412/600/600 "https://example.com" "Mozilla/5.0 (Windows NT 11.0)" site.example.com/443 "/about"
-fd00::abcd fd00::abcd/51515 - [2025-07-16T10:05:57+00:00] - "" "GET /metrics HTTP/1.1" 200 0.032 123/256/256 "-" "Prometheus/2.42.1" metrics.internal/443 "/metrics"
+# 
+```
+
+```
+# gunzip -c nq/NginxError-Standard-V1.0-EVENTS_20250716_100600.log.gz
+2025/07/16 10:01:42 [error] 1234#0: *101 SSL_do_handshake() failed (SSL: error:14094410:SSL routines:ssl3_read_bytes:sslv3 alert handshake failure) while SSL handshaking, client: 192.0.2.43, server: 0.0.0.0:443 _resolv_: 0.0.0.0=- 192.0.2.43=-
+2025/07/16 10:02:01 [warn] 1234#0: *102 no If-Modified-Since header in conditional GET request for /static/img/logo.png, client: 198.51.100.17, server: cdn.example.org _resolv_: 198.51.100.17=-
+2025/07/16 10:02:24 [error] 1234#0: *103 open() "/var/www/html/robots.txt" failed (2: No such file or directory), client: 203.0.113.7, server: site.example.com _resolv_: 203.0.113.7=-
+2025/07/16 10:03:18 [notice] 1234#0: signal process started
+2025/07/16 10:03:39 [error] 1234#0: *104 connect() failed (111: Connection refused) while connecting to upstream, client: 172.16.0.24, server: api.example.net, request: "GET /api/status HTTP/1.1", upstream: "http://127.0.0.1:8081/status" _resolv_: 127.0.0.1=localhost 172.16.0.24=-
+2025/07/16 10:04:02 [crit] 1234#0: *105 SSL_write() failed (SSL: syscall failure: Broken pipe) while sending to client, client: 10.0.0.5, server: internal.example.local _resolv_: 10.0.0.5=-
+2025/07/16 10:04:26 [error] 1234#0: *106 invalid host in upstream "http://:8080", client: 45.33.32.156, server: example.com, request: "GET /services HTTP/1.1" _resolv_: 45.33.32.156=scanme.nmap.org
+2025/07/16 10:04:59 [warn] 1234#0: *107 using uninitialized variable "$custom_var" while logging request, client: 93.184.216.34, server: shop.example.com _resolv_: 93.184.216.34=-
+2025/07/16 10:05:13 [error] 1234#0: *108 client intended to send too large body: 10485760 bytes, client: 2606:4700:4700::1111, server: cdn.ca.net, request: "POST /upload HTTP/1.1" _resolv_: 2606:4700:4700::1111=one.one.one.one
+2025/07/16 10:06:00 [notice] 1234#0: signal 1 (SIGHUP) received, reconfiguring
 # 
 ```
 
