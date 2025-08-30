@@ -400,10 +400,16 @@ def extract_timestamp(
             if m:
                 ts = m.group(1)
                 try:
-                    # Handle timezone colon for Python <3.7
-                    if fmt.endswith('%z') and re.search(r'[+-]\d{2}:\d{2}$', ts):
-                        ts = ts[:-3] + ts[-2:]
-                    return datetime.datetime.strptime(ts, fmt)
+                    # Handle epoch formats
+                    if fmt == 'epoch':
+                        epoch_float = float(ts)
+                        dt = datetime.datetime.fromtimestamp(epoch_float, tz=datetime.timezone.utc)
+                        return dt
+                    else:
+                        # Handle timezone colon for Python <3.7
+                        if fmt.endswith('%z') and re.search(r'[+-]\d{2}:\d{2}$', ts):
+                            ts = ts[:-3] + ts[-2:]
+                        return datetime.datetime.strptime(ts, fmt)
                 except Exception as e:
                     logging.debug("Custom timestamp parse failed for '%s' with format '%s': %s", ts, fmt, e)
 
@@ -819,17 +825,19 @@ def age_out_files(
         deleted_for_age, deleted_for_size, len(files)
     )
 
-def enrich_ips_multithreaded(line: str, max_workers: int = 10) -> str:
+def enrich_ips_multithreaded(line: str, json_mode: bool = False, max_workers: int = 10) -> str:
     """
     Enrich all IP addresses found in the input line with FQDNs using multithreading.
 
     Args:
         line (str): The original log line potentially containing IP addresses.
         max_workers (int): Maximum number of concurrent threads to use for DNS lookups.
+        json_mode (bool): If true, then treat the input line as a single line of json
 
     Returns:
         str: The enriched log line with all resolved IP addresses appended in the format:
              <original_line> _resolv_: IP1=FQDN1 IP2=FQDN2 ...
+            or
 
     Notes:
         - IP addresses are extracted via `extract_ips(line)`.
@@ -853,10 +861,20 @@ def enrich_ips_multithreaded(line: str, max_workers: int = 10) -> str:
                 fqdn = '-'
             resolved_map[ip] = fqdn
 
-    # Append hostname resolution to the line
-    enriched_line = line + " _resolv_:"
-    for ip in ips:
-        enriched_line += f" {ip}={resolved_map.get(ip, '-')}"
+    if json_mode:
+        try:
+            log_obj = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValueError("Malformed JSON in line ")
+        # Append the dictionary as a nested object with the key "_resolv" 
+        log_obj['_resolv_'] = resolved_map
+        enriched_line = json.dumps(log_obj)
+    else:
+        # Append hostname resolution to the line
+        enriched_line = line + " _resolv_:"
+        for ip in ips:
+            enriched_line += f" {ip}={resolved_map.get(ip, '-')}"
+
     return enriched_line
 
 
@@ -894,6 +912,7 @@ def process_log_files(
 
     custom_formats = compile_custom_formats(feed)
     enrich_ip = feed.get('enrich_ip', False)
+    json_mode = feed.get('json_mode', False)
     last_ts_str = state.get("last_timestamp")
     last_ts = None
     if last_ts_str:
@@ -938,7 +957,7 @@ def process_log_files(
                         continue
                     if enrich_ip:
                         # Enrich line using multithreaded DNS lookup
-                        line = enrich_ips_multithreaded(line)
+                        line = enrich_ips_multithreaded(line, json_mode)
                     new_lines.append(line)
                     if max_ts is None or ts > max_ts:
                         max_ts = ts
